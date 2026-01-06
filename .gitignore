@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Database
+installments.db
+
+# Environment/Secrets
+.env
+
+# Mac system files
+.DS_Store

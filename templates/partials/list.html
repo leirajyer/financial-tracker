@@ -1,0 +1,51 @@
+{% if not records %}
+<p class="text-slate-400 italic text-center p-8">No records found.</p>
+{% else %}
+<table class="w-full text-left">
+  <thead>
+    <tr class="bg-slate-50 text-slate-500 text-xs uppercase border-b">
+      <th class="p-3">Description</th>
+      <th class="p-3">Card</th>
+      <th class="p-3">Monthly</th>
+      <th class="p-3">Total</th>
+      <th class="p-3">Owner</th>
+      <th class="p-3">Starts</th>
+      <th class="p-3">Ends</th>
+      <th class="p-3"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for rec in records %}
+    <tr
+      id="row-{{ rec.id }}"
+      class="border-b hover:bg-slate-50 transition text-sm"
+    >
+      <td class="p-3 font-medium">{{ rec.description }}</td>
+      <td class="p-3">{{ rec.card.name }}</td>
+      <td class="p-3 font-bold text-indigo-600">
+        ₱{{ "{:,.2f}".format(rec.monthly_payment) }}
+      </td>
+      <td class="p-3 font-bold text-red-600">
+        ₱{{ "{:,.2f}".format(rec.total_amount) }}
+      </td>
+      <td class="p-3 font-medium text-slate-700">{{ rec.owner.name }}</td>
+      <td class="p-3 text-slate-500">{{ rec.start_date.strftime("%b %Y") }}</td>
+      <td class="p-3 text-green-600 font-medium">
+        {{ rec.end_date.strftime("%b %Y") }}
+      </td>
+      <td class="p-3 text-right">
+        <button
+          hx-delete="/delete-installment/{{ rec.id }}"
+          hx-confirm="Are you sure?"
+          hx-target="#row-{{ rec.id }}"
+          hx-swap="outerHTML"
+          class="text-red-400 hover:text-red-600 cursor-pointer"
+        >
+          ❌
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
