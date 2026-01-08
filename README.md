@@ -1,22 +1,27 @@
-# 💳 Credit Card Installment Tracker
+# 🚀 FastAPI 30-Day Challenge: Installment Tracker
 
-A secure, modular web application designed to track and manage monthly credit card installments. This project helps users monitor their total monthly "burn," debt distribution across different cards, and payment timelines.
+A secure, modular credit card installment manager built as part of a deep-dive challenge into the FastAPI ecosystem.
 
-## 🚀 Features
-- **Secure Authentication**: User login powered by `bcrypt` password hashing.
-- **Relational Database**: Tracks Users, Credit Cards, Owners, and Installments using SQLAlchemy.
-- **Dynamic UI**: Interactive forms and real-time updates using **HTMX** and **Tailwind CSS**.
-- **Modular Architecture**: Clean separation of concerns (Models, Database, Seeds, and Routes).
+## 🎯 The Challenge Goals
+
+- [x] **Modular Architecture**: Separate database, models, and routes into a professional package structure.
+- [x] **Security**: Implement industry-standard `bcrypt` password hashing.
+- [x] **Relational Modeling**: Manage complex links between Users, Cards, Owners, and Installments.
+- [x] **Frontend Interactivity**: Use **HTMX** for a "Single Page App" feel without heavy JavaScript.
 
 ## 🛠️ Tech Stack
-- **Backend**: FastAPI (Python 3.13+)
-- **Database**: SQLite & SQLAlchemy
-- **Frontend**: HTMX, Jinja2 Templates, Tailwind CSS
-- **Security**: Bcrypt
 
-## 📦 Installation & Setup
+- **Core**: FastAPI (Python 3.13)
+- **ORM**: SQLAlchemy (SQLite)
+- **Frontend**: HTMX, Tailwind CSS, Jinja2
+- **Auth**: Bcrypt
 
-1. **Clone the repository**:
-   ```bash
-   git clone [https://github.com/leirajyer/installment-tracker.git](https://github.com/leirajyer/installment-tracker.git)
-   cd installment-tracker
+## 🚦 Quick Start
+
+1. **Setup**: `pip install fastapi uvicorn sqlalchemy bcrypt python-multipart python-dateutil`
+2. **Run**: `uvicorn main:app --reload`
+3. **Login**: `admin / admin4321`
+
+---
+
+_Status: Day 6/30 Completed_

@@ -7,7 +7,7 @@ def seed_db():
     db = SessionLocal()
 
     # 1. Seed Users (Direct Bcrypt Method)
-    accounts = [{"u": "Rey", "p": "rey123"}, {"u": "Jerna", "p": "jerna123"}]
+    accounts = [{"u": "admin", "p": "admin4321"}, {"u": "admin2", "p": "admin4321"}]
     for acc in accounts:
         exists = db.query(User).filter(User.username == acc["u"]).first()
         if not exists:
