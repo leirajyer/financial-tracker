@@ -9,6 +9,7 @@ import bcrypt
 from app.database import engine, SessionLocal, Base
 from app.models import User, Card, Owner, Installment
 from app.seed import seed_db
+from app.logic import calculate_monthly_totals  # Add this import
 
 # Initialize Database - Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
@@ -23,6 +24,24 @@ async def startup_event():
 
 
 # --- AUTH ROUTES ---
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    if not request.cookies.get("is_logged_in"):
+        return RedirectResponse(url="/login")
+
+    db = SessionLocal()
+    # Get the calculated numbers
+    stats = calculate_monthly_totals(db)
+    db.close()
+
+    return templates.TemplateResponse(
+        "base.html",
+        {
+            "request": request,
+            "total_burn": stats["total_burn"],
+            "card_totals": stats["card_totals"],
+        },
+    )
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -55,29 +74,44 @@ async def logout():
     return response
 
 
-# --- DASHBOARD & LIST ROUTES ---
-
-
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    if not request.cookies.get("is_logged_in"):
-        return RedirectResponse(url="/login")
-    return templates.TemplateResponse("base.html", {"request": request})
-
-
 @app.get("/get-list", response_class=HTMLResponse)
 async def get_list(request: Request):
     db = SessionLocal()
-    records = db.query(Installment).all()
-    db.close()
+    try:
+        # 1. Fetch the raw installments
+        records = db.query(Installment).all()
 
-    # Assuming you created templates/partials/list.html as discussed earlier
-    return templates.TemplateResponse(
-        "partials/list.html", {"request": request, "records": records}
-    )
+        # 2. Run the logic to get total_burn and card_totals
+        stats = calculate_monthly_totals(db)
+
+        # 3. Return the response with EVERY variable the template needs
+        return templates.TemplateResponse(
+            "partials/list.html",
+            {
+                "request": request,
+                "records": records,
+                "total_burn": stats["total_burn"],
+                "card_totals": stats["card_totals"],
+                "total_remaining": stats.get("total_remaining", 0),
+            },
+        )
+    finally:
+        db.close()
 
 
 # --- HTMX SELECT LOADERS ---
+
+
+@app.get("/get-owners")
+async def get_owners():
+    db = SessionLocal()
+    owners = db.query(Owner).all()
+    db.close()
+    # Ensure value="{o.id}" has no extra escaped quotes
+    options = '<option value="" disabled selected>Select Owner</option>'
+    for o in owners:
+        options += f"<option value={o.id}>{o.name}</option>"
+    return options
 
 
 @app.get("/get-cards")
@@ -87,18 +121,7 @@ async def get_cards():
     db.close()
     options = '<option value="" disabled selected>Select Card</option>'
     for c in cards:
-        options += f'<option value="{c.id}">{c.name}</option>'
-    return options
-
-
-@app.get("/get-owners")
-async def get_owners():
-    db = SessionLocal()
-    owners = db.query(Owner).all()
-    db.close()
-    options = '<option value="" disabled selected>Select Owner</option>'
-    for o in owners:
-        options += f'<option value="{o.id}">{o.name}</option>'
+        options += f"<option value={c.id}>{c.name}</option>"
     return options
 
 
@@ -135,8 +158,16 @@ async def add_installment(
     owner_id: int = Form(...),
     start_date: date = Form(...),
 ):
-    monthly = total_amount / total_months
-    end_date = start_date + relativedelta(months=total_months)
+    # If user enters 0 or 1, it's a straight payment (1 month total)
+    actual_months = total_months if total_months > 1 else 1
+    monthly = total_amount / actual_months
+
+    # Logic: Jan 1 to Feb 1 is 2 months.
+    # So for a 12-month plan starting Jan 1, it should end Dec 1.
+    if actual_months == 1:
+        end_date = start_date
+    else:
+        end_date = start_date + relativedelta(months=actual_months - 1)
 
     db = SessionLocal()
     db.add(
