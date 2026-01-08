@@ -20,8 +20,4 @@ A secure, modular credit card installment manager built as part of a deep-dive c
 
 1. **Setup**: `pip install fastapi uvicorn sqlalchemy bcrypt python-multipart python-dateutil`
 2. **Run**: `uvicorn main:app --reload`
-3. **Login**: `admin / admin4321`
-
----
-
-_Status: Day 6/30 Completed_
+3. **Login**: `admin / admin4321` and `admin2 / admin4321`
