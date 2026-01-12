@@ -21,11 +21,13 @@ class Card(Base):
     installments = relationship("Installment", back_populates="card")
 
 
-class Owner(Base):
-    __tablename__ = "owners"
+class Payee(Base):
+    __tablename__ = "payees"  # Renamed table
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
-    installments = relationship("Installment", back_populates="owner")
+    name = Column(String, unique=True, index=True)
+
+    # Update the relationship back-reference
+    installments = relationship("Installment", back_populates="payee")
 
 
 class Installment(Base):
@@ -38,10 +40,10 @@ class Installment(Base):
     end_date = Column(Date)
 
     card_id = Column(Integer, ForeignKey("cards.id"))
-    owner_id = Column(Integer, ForeignKey("owners.id"))
+    payee_id = Column(Integer, ForeignKey("payees.id"))
 
     card = relationship("Card", back_populates="installments")
-    owner = relationship("Owner", back_populates="installments")
+    payee = relationship("Payee", back_populates="installments")
 
     @property
     def total_months_count(self):
@@ -56,20 +58,16 @@ class Installment(Base):
     def get_progress(self):
         today = date.today()
         total = self.total_months_count
-        
+
         if today < self.start_date:
             return {"percent": 0, "current": 0, "total": total}
-        
+
         diff = relativedelta(today, self.start_date)
         current = (diff.years * 12) + diff.months + 1
         current_capped = min(current, total)
         percent = (current_capped / total) * 100
-    
-        return {
-            "percent": round(percent, 1),
-            "current": current_capped,
-            "total": total
-        }
+
+        return {"percent": round(percent, 1), "current": current_capped, "total": total}
 
     def get_remaining_balance(self):
         prog = self.get_progress()

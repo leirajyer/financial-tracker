@@ -13,7 +13,7 @@
       >
         <th class="p-4 font-semibold">Description</th>
         <th class="p-4 font-semibold">Card</th>
-        <th class="p-4 font-semibold">Owner</th>
+        <th class="p-4 font-semibold">Payee</th>
         <th class="p-4 font-semibold">Monthly</th>
         <th class="p-4 font-semibold">Starts</th>
         <th class="p-4 font-semibold">Timeline</th>
@@ -45,7 +45,7 @@
         </td>
 
         <td class="p-4 text-sm text-slate-600">
-          {% if rec.owner %} {{ rec.owner.name }} {% else %}
+          {% if rec.payee %} {{ rec.payee.name }} {% else %}
           <span class="text-slate-300 italic text-xs">-</span>
           {% endif %}
         </td>

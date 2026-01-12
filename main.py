@@ -3,11 +3,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from datetime import date
 from dateutil.relativedelta import relativedelta
+from fastapi import Request
+from fastapi.responses import HTMLResponse
 import bcrypt
 
 # Modular Imports from your app folder
 from app.database import engine, SessionLocal, Base
-from app.models import User, Card, Owner, Installment
+from app.models import User, Card, Payee, Installment
 from app.seed import seed_db
 from app.logic import calculate_monthly_totals  # Add this import
 
@@ -105,10 +107,10 @@ async def get_list(request: Request):
 @app.get("/get-owners")
 async def get_owners():
     db = SessionLocal()
-    owners = db.query(Owner).all()
+    owners = db.query(Payee).all()
     db.close()
     # Ensure value="{o.id}" has no extra escaped quotes
-    options = '<option value="" disabled selected>Select Owner</option>'
+    options = '<option value="" disabled selected>Select Payee</option>'
     for o in owners:
         options += f"<option value={o.id}>{o.name}</option>"
     return options
@@ -150,42 +152,60 @@ async def add_owner(response: Response, name: str = Form(...)):
 
 @app.post("/add-installment")
 async def add_installment(
+    request: Request,  # Added request parameter
     response: Response,
     description: str = Form(...),
     card_id: int = Form(...),
     total_amount: float = Form(...),
     total_months: int = Form(...),
-    owner_id: int = Form(...),
+    payee_id: int = Form(...),
     start_date: date = Form(...),
 ):
-    # If user enters 0 or 1, it's a straight payment (1 month total)
+    # 1. Logic for Straight vs Installment
     actual_months = total_months if total_months > 1 else 1
     monthly = total_amount / actual_months
 
-    # Logic: Jan 1 to Feb 1 is 2 months.
-    # So for a 12-month plan starting Jan 1, it should end Dec 1.
     if actual_months == 1:
         end_date = start_date
     else:
         end_date = start_date + relativedelta(months=actual_months - 1)
 
+    # 2. Database Save
     db = SessionLocal()
-    db.add(
-        Installment(
-            description=description,
-            card_id=card_id,
-            total_amount=total_amount,
-            monthly_payment=monthly,
-            owner_id=owner_id,
-            start_date=start_date,
-            end_date=end_date,
-        )
+    new_item = Installment(
+        description=description,
+        card_id=card_id,
+        total_amount=total_amount,
+        monthly_payment=monthly,
+        payee_id=payee_id,
+        start_date=start_date,
+        end_date=end_date,
     )
+    db.add(new_item)
     db.commit()
+
+    # 3. Recalculate Stats for the Summary update
+    stats = calculate_monthly_totals(db)
     db.close()
 
+    # 4. Prepare Multi-part Response
+    success_msg = '<div class="p-2 bg-green-100 text-green-700 rounded text-sm">✅ Added Successfully</div>'
+
+    # Ensure "request" is passed here so Jinja2 doesn't fail
+    summary_html = templates.get_template("partials/summary.html").render(
+        {
+            "request": request,
+            "total_burn": stats["total_burn"],
+            "card_totals": stats["card_totals"],
+            "total_remaining": stats["total_remaining"],
+        }
+    )
+
+    # 5. Trigger List Refresh and Return
     response.headers["HX-Trigger"] = "listChanged"
-    return f'<div class="p-2 bg-green-100 text-green-700 rounded text-sm">✅ Added Successfully</div>'
+
+    # Concatenating success message + the OOB summary partial
+    return HTMLResponse(content=success_msg + summary_html)
 
 
 @app.delete("/delete-installment/{item_id}")
@@ -197,3 +217,29 @@ async def delete_installment(item_id: int):
         db.commit()
     db.close()
     return ""
+
+
+# Payee
+@app.post("/add-payee")
+async def add_payee(response: Response, name: str = Form(...)):
+    db = SessionLocal()
+    existing = db.query(Payee).filter(Payee.name == name).first()
+    if not existing:
+        db.add(Payee(name=name))
+        db.commit()
+    db.close()
+    # Trigger refresh for the Payee dropdown in the main form
+    response.headers["HX-Trigger"] = "payeeAdded"
+    return '<div class="text-green-600 text-xs font-bold">✓ Payee Added</div>'
+
+
+@app.get("/get-payees")
+async def get_payees(request: Request):
+    db = SessionLocal()
+    payees = db.query(Payee).all()
+    db.close()
+    # Returns the <option> list for the select element
+    options = "".join([f'<option value="{p.id}">{p.name}</option>' for p in payees])
+    return HTMLResponse(
+        content=f'<option value="" disabled selected>Select Payee</option>{options}'
+    )

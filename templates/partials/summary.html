@@ -1,0 +1,32 @@
+<div
+  id="dashboard-summary"
+  hx-swap-oob="true"
+  class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 mt-8"
+>
+  <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-indigo-500">
+    <p class="text-slate-500 text-sm font-medium uppercase">
+      Total Monthly Burn
+    </p>
+    <h2 class="text-3xl font-bold text-slate-800">
+      ₱{{ "{:,.2f}".format(total_burn) }}
+    </h2>
+  </div>
+
+  <div
+    class="bg-white p-6 rounded-xl shadow-sm col-span-2 border-t-4 border-emerald-500"
+  >
+    <p class="text-slate-500 text-sm font-medium uppercase mb-2">
+      Card Load Breakdown
+    </p>
+    <div class="flex flex-wrap gap-4">
+      {% for card_name, amount in card_totals.items() %}
+      <div class="bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+        <span class="text-xs font-bold text-slate-600">{{ card_name }}:</span>
+        <span class="text-xs text-emerald-600 font-bold"
+          >₱{{ "{:,.2f}".format(amount) }}</span
+        >
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

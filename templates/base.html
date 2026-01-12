@@ -26,6 +26,7 @@
     </nav>
 
     <main class="w-full px-4">
+      <div class="grid-cols-12" id="dashboard-summary">{% include "partials/summary.html" %}</div>
       <div class="grid grid-cols-12">
         <div class="col-span-8 px-2">
           <div
@@ -71,7 +72,7 @@
                     >Owner</label
                   >
                   <select
-                    name="owner_id"
+                    name="payee_id"
                     hx-get="/get-owners"
                     hx-target="this"
                     hx-trigger="load"
@@ -131,7 +132,7 @@
             <div id="response-msg" class="mt-4"></div>
           </div>
         </div>
-        <div class="col-span-4 px-2">
+        <aside class="col-span-4 px-2 space-y-4">
           <div
             class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200"
           >
@@ -141,27 +142,54 @@
               hx-on::after-request="this.reset()"
               class="space-y-4"
             >
-              <div>
-                <label
-                  class="block text-xs font-bold text-slate-400 uppercase mb-1"
-                  >Card Name</label
-                >
-                <input
-                  type="text"
-                  name="name"
-                  class="w-full border-2 border-slate-100 p-2 rounded-lg"
-                  required
-                />
-              </div>
+              <label
+                class="block text-xs font-bold text-slate-400 uppercase mb-1"
+                >Card Name</label
+              >
+              <input
+                type="text"
+                name="name"
+                class="w-full border-2 border-slate-100 p-2 rounded-lg"
+                required
+              />
               <button
                 type="submit"
-                class="w-full bg-violet-600 text-white font-bold py-3 rounded-xl hover:bg-violet-700 transition mt-4"
+                class="w-full bg-violet-600 text-white font-bold py-3 rounded-xl hover:bg-violet-700 transition"
               >
                 Add Card
               </button>
             </form>
-
             <div id="response-card" class="mt-4"></div>
+          </div>
+
+          <div
+            class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200"
+          >
+            <form
+              hx-post="/add-payee"
+              hx-target="#response-payee"
+              hx-on::after-request="this.reset()"
+              class="space-y-4"
+            >
+              <label
+                class="block text-xs font-bold text-slate-400 uppercase mb-1"
+                >Payee Name</label
+              >
+              <input
+                type="text"
+                name="name"
+                placeholder="e.g., Self, John, Sarah"
+                class="w-full border-2 border-slate-100 p-2 rounded-lg"
+                required
+              />
+              <button
+                type="submit"
+                class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-black transition"
+              >
+                Add Payee
+              </button>
+            </form>
+            <div id="response-payee" class="mt-4"></div>
           </div>
         </div>
       </div>
@@ -177,40 +205,7 @@
         ></div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 mt-8">
-        <div
-          class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-indigo-500"
-        >
-          <p class="text-slate-500 text-sm font-medium uppercase">
-            Total Monthly Burn
-          </p>
-          <h2 class="text-3xl font-bold text-slate-800">
-            ₱{{ "{:,.2f}".format(total_burn) }}
-          </h2>
-        </div>
-
-        <div
-          class="bg-white p-6 rounded-xl shadow-sm col-span-2 border-t-4 border-emerald-500"
-        >
-          <p class="text-slate-500 text-sm font-medium uppercase mb-2">
-            Card Load Breakdown
-          </p>
-          <div class="flex flex-wrap gap-4">
-            {% for card_name, amount in card_totals.items() %}
-            <div
-              class="bg-slate-50 px-3 py-1 rounded-full border border-slate-200"
-            >
-              <span class="text-xs font-bold text-slate-600"
-                >{{ card_name }}:</span
-              >
-              <span class="text-xs text-emerald-600 font-bold">
-                ₱{{ "{:,.2f}".format(amount) }}
-              </span>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
+      
     </main>
   </body>
 </html>

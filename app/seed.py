@@ -1,6 +1,6 @@
 import bcrypt
 from .database import SessionLocal
-from .models import User, Card, Owner
+from .models import User, Card, Payee
 
 
 def seed_db():
@@ -19,9 +19,9 @@ def seed_db():
             print(f"✅ User Created: {acc['u']}")
 
     # 2. Seed Owners
-    if db.query(Owner).count() == 0:
-        for name in ["Rey", "Jerna"]:
-            db.add(Owner(name=name))
+    if db.query(Payee).count() == 0:
+        for name in ["Owner"]:
+            db.add(Payee(name=name))
         print("✅ Owners seeded.")
 
     # 3. Seed Cards
