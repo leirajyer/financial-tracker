@@ -1,23 +1,29 @@
-# 🚀 FastAPI 30-Day Challenge: Installment Tracker
+🚀 FastAPI Finance & Installment Tracker
+A robust, reactive financial dashboard built to track credit card installments, monthly "burn" rates, and future payment forecasts. This project focuses on high-performance server-side rendering and complex relational data modeling.
 
-A secure, modular credit card installment manager built as part of a deep-dive challenge into the FastAPI ecosystem.
+🎯 Key Features
+[x] Live Dashboard: Real-time "Monthly Burn" and "Remaining Debt" calculation using HTMX Out-of-Bounds (OOB) swaps.
 
-## 🎯 The Challenge Goals
+[x] Forecast Engine: Dynamic monthly views to predict future bill payments based on active installments.
 
-- [x] **Modular Architecture**: Separate database, models, and routes into a professional package structure.
-- [x] **Security**: Implement industry-standard `bcrypt` password hashing.
-- [x] **Relational Modeling**: Manage complex links between Users, Cards, Owners, and Installments.
-- [x] **Frontend Interactivity**: Use **HTMX** for a "Single Page App" feel without heavy JavaScript.
+[x] Eager Loading: Optimized database queries using SQLAlchemy joinedload to prevent "Lazy Load" errors and improve performance.
 
-## 🛠️ Tech Stack
+[x] Reactive UI: Modern, pill-style summary cards and progress bars built with Tailwind CSS.
 
-- **Core**: FastAPI (Python 3.13)
-- **ORM**: SQLAlchemy (SQLite)
-- **Frontend**: HTMX, Tailwind CSS, Jinja2
-- **Auth**: Bcrypt
+[x] Modular Backend: Professional Python package structure separating models, logic, and route handling.
 
-## 🚦 Quick Start
+🛠️ Tech Stack
+Framework: FastAPI (Python 3.13)
 
-1. **Setup**: `pip install fastapi uvicorn sqlalchemy bcrypt python-multipart python-dateutil`
-2. **Run**: `uvicorn main:app --reload`
-3. **Login**: `admin / admin4321` and `admin2 / admin4321`
+Database/ORM: SQLAlchemy (SQLite) with relational mapping
+
+Frontend: HTMX (for SPA interactivity), Tailwind CSS (for styling), Jinja2 (templating)
+
+Utilities: python-dateutil for complex recurring date math
+
+🚦 Quick Start
+Install Dependencies: pip install fastapi uvicorn sqlalchemy bcrypt python-multipart python-dateutil
+
+Launch Server: uvicorn main:app --reload
+
+Access Dashboard: Navigate to http://127.0.0.1:8000
