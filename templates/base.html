@@ -26,14 +26,14 @@
         hx-target="#forecast-container" hx-trigger="change, load"
         class="bg-white border border-slate-200 p-2 rounded-lg shadow-sm">
     </div>
-
+    <!-- forecast -->
     <div id="forecast-container" class="mt-6">
       <div class="p-10 text-center text-slate-400 animate-pulse">
         Calculating forecast for {{ now.strftime('%B %Y') }}...
       </div>
     </div>
   </div>
-
+  <!-- month summary  -->
   <div class="w-full px-6">
     <div id="summary-container" hx-get="/get-summary" hx-trigger="load" class="mb-6">
       <div class="p-4 text-center text-slate-400">Loading summary...</div>
