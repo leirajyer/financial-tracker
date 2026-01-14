@@ -28,20 +28,27 @@ def calculate_monthly_totals(db_session):
     }
 
 
-def get_monthly_forecast(db, year, month):
+def get_monthly_forecast(db, year, month, card_id=None, payee_id=None):
     target_date = date(year, month, 1)
 
-    # Use joinedload to fetch Card and Payee data in the same query
-    all_items = (
-        db.query(Installment)
-        .options(joinedload(Installment.card), joinedload(Installment.payee))
-        .all()
+    # 1. Start the query with eager loading
+    query = db.query(Installment).options(
+        joinedload(Installment.card), joinedload(Installment.payee)
     )
+
+    # 2. Apply optional filters from the dropdowns
+    if card_id:
+        query = query.filter(Installment.card_id == card_id)
+    if payee_id:
+        query = query.filter(Installment.payee_id == payee_id)
+
+    all_items = query.all()
 
     active_items = []
     total_due = 0.0
     card_split = {}
 
+    # 3. Filter for installments active during the target month
     for item in all_items:
         if item.start_date <= target_date <= item.end_date:
             active_items.append(item)
@@ -50,6 +57,7 @@ def get_monthly_forecast(db, year, month):
             c_name = item.card.name if item.card else "Unknown"
             card_split[c_name] = card_split.get(c_name, 0) + item.monthly_payment
 
+    # 4. ALWAYS return this dictionary (even if empty) to prevent unpacking errors
     return {
         "items": active_items,
         "total_due": total_due,

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, Response
+from fastapi import FastAPI, Request, Form, Response, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
@@ -29,12 +29,21 @@ async def startup_event():
 # --- AUTH ROUTES ---
 @app.get("/")
 async def index(request: Request):
-    # Pass the current time so the HTML can format the default month
+    db = SessionLocal()
+    # Fetch lists for the forecast filters
+    cards = db.query(Card).all()
+    payees = db.query(Payee).all()
+    stats = calculate_monthly_totals(db)
+    db.close()
+
     return templates.TemplateResponse(
-        "base.html",
+        "index.html",
         {
             "request": request,
-            "now": datetime.now(),  # This is the missing piece!
+            "now": datetime.now(),
+            "cards": cards,
+            "payees": payees,
+            "total_burn": stats["total_burn"],
         },
     )
 
@@ -144,7 +153,6 @@ async def add_payee(response: Response, name: str = Form(...)):
 @app.post("/add-installment")
 async def add_installment(
     request: Request,
-    response: Response,
     description: str = Form(...),
     card_id: int = Form(...),
     total_amount: float = Form(...),
@@ -152,7 +160,7 @@ async def add_installment(
     payee_id: int = Form(...),
     start_period: str = Form(...),
 ):
-    # 1. Logic for Date Calculation
+    # 1. Logic for Date Calculation (Keep this exactly as you had it)
     start_date = datetime.strptime(start_period, "%Y-%m").date()
     actual_months = total_months if total_months > 1 else 1
     monthly = total_amount / actual_months
@@ -175,40 +183,13 @@ async def add_installment(
     )
     db.add(new_item)
     db.commit()
-
-    # 3. Fetch Data BEFORE closing the DB
-    stats = calculate_monthly_totals(db)
-    # Important: joinedload here ensures the list has Card/Payee names
-    records = (
-        db.query(Installment)
-        .options(joinedload(Installment.card), joinedload(Installment.payee))
-        .all()
-    )
     db.close()
 
-    # 4. Prepare Multi-part Response strings
-    success_msg = '<div class="p-2 bg-green-100 text-green-700 rounded text-sm mb-4">✅ Added Successfully</div>'
+    # 3. REDIRECT vs SWAP
+    # Since we are on a dedicated /add page, we want to go back to the list.
+    # We use the HX-Location header to tell HTMX to "navigate" to the records page.
 
-    summary_html = templates.get_template("partials/summary.html").render(
-        {
-            "request": request,
-            "total_burn": stats["total_burn"],
-            "card_totals": stats["card_totals"],
-            "total_remaining": stats.get("total_remaining", 0),
-        }
-    )
-
-    list_html = templates.get_template("partials/list.html").render(
-        {"request": request, "records": records}
-    )
-
-    # 5. Wrap with OOB IDs (Ensure these match your index.html IDs)
-    summary_oob = f'<div id="summary-container" hx-swap-oob="true">{summary_html}</div>'
-    list_oob = (
-        f'<div id="installment-list-container" hx-swap-oob="true">{list_html}</div>'
-    )
-
-    return HTMLResponse(content=success_msg + summary_oob + list_oob)
+    return Response(headers={"HX-Location": "/records"})
 
 
 @app.delete("/delete-installment/{item_id}")
@@ -298,23 +279,91 @@ async def get_payees(request: Request):
 
 
 # Forecast
+# @app.get("/get-forecast")
+# async def get_forecast(request: Request, forecast_period: str = None):
+#     # Fallback: If for some reason forecast_period is missing, use current month
+#     if not forecast_period:
+#         forecast_period = datetime.now().strftime("%Y-%m")
+
+#     try:
+#         yr, mo = map(int, forecast_period.split("-"))
+
+#         db = SessionLocal()
+#         # Using our logic from Step 2 with eager loading
+#         data = get_monthly_forecast(db, yr, mo)
+#         db.close()
+
+#         return templates.TemplateResponse(
+#             "partials/forecast.html", {"request": request, **data}
+#         )
+#     except Exception as e:
+#         print(f"Forecast Error: {e}")
+#         return HTMLResponse(f"Error: {str(e)}", status_code=500)
+
+
+from typing import Optional  # Add this to your imports
+
+
 @app.get("/get-forecast")
-async def get_forecast(request: Request, forecast_period: str = None):
-    # Fallback: If for some reason forecast_period is missing, use current month
+async def get_forecast(
+    request: Request,
+    forecast_period: str = None,
+    card_id: Optional[str] = Query(None),  # Change int to Optional[str]
+    payee_id: Optional[str] = Query(None),  # Change int to Optional[str]
+):
     if not forecast_period:
         forecast_period = datetime.now().strftime("%Y-%m")
 
-    try:
-        yr, mo = map(int, forecast_period.split("-"))
+    yr, mo = map(int, forecast_period.split("-"))
 
-        db = SessionLocal()
-        # Using our logic from Step 2 with eager loading
-        data = get_monthly_forecast(db, yr, mo)
-        db.close()
+    # Convert to int only if they are not empty strings
+    c_id = int(card_id) if card_id and card_id.strip() else None
+    p_id = int(payee_id) if payee_id and payee_id.strip() else None
+
+    db = SessionLocal()
+    data = get_monthly_forecast(db, yr, mo, card_id=c_id, payee_id=p_id)
+    db.close()
+
+    return templates.TemplateResponse(
+        "partials/forecast.html", {"request": request, **data}
+    )
+
+
+@app.get("/records")
+async def records_page(request: Request):
+    # Just like the index, we need to pass 'now' for the nav ticker
+    db = SessionLocal()
+    stats = calculate_monthly_totals(db)
+    db.close()
+
+    return templates.TemplateResponse(
+        "records_page.html",
+        {"request": request, "now": datetime.now(), "total_burn": stats["total_burn"]},
+    )
+
+
+@app.get("/add")
+async def add_page(request: Request):
+    db = SessionLocal()
+    try:
+        # We need the stats for the Navbar ticker
+        stats = calculate_monthly_totals(db)
 
         return templates.TemplateResponse(
-            "partials/forecast.html", {"request": request, **data}
+            "add_page.html",
+            {
+                "request": request,
+                "now": datetime.now(),
+                "total_burn": stats["total_burn"],
+            },
         )
-    except Exception as e:
-        print(f"Forecast Error: {e}")
-        return HTMLResponse(f"Error: {str(e)}", status_code=500)
+    finally:
+        db.close()
+
+
+@app.get("/add-form")
+async def get_add_form(request: Request):
+    # We pass 'now' so the 'Starting Month' input can default to the current month
+    return templates.TemplateResponse(
+        "partials/form.html", {"request": request, "now": datetime.now()}
+    )

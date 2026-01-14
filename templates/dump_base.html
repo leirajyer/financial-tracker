@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Financial Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+
+<body class="bg-slate-50 font-sans min-h-screen pb-20">
+  <nav class="bg-indigo-900 text-white p-4 mb-8 flex justify-between items-center shadow-lg sticky top-0 z-10">
+    <span class="font-bold">💳 <span class="hidden md:inline ml-2">Financial Tracker</span></span>
+    <nav class="flex gap-4">
+      <a href="/" class="text-sm font-bold hover:text-indigo-300">Dashboard</a>
+      <a href="/installments" class="text-sm font-bold hover:text-indigo-300">Records</a>
+      <a href="/forecast" class="text-sm font-bold hover:text-indigo-300">Forecast</a>
+    </nav>
+    <div id="nav-total-burn"
+      class="flex items-center gap-2 bg-indigo-800/50 px-4 py-1.5 rounded-full border border-indigo-700">
+      <span class="text-[10px] uppercase font-bold text-indigo-300">Total this month:</span>
+      <span id="nav-total-value" class="text-sm font-black text-emerald-400">
+        ₱{{ "{:,.2f}".format(total_burn) if total_burn else "0.00" }}
+      </span>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <span class="text-xs text-indigo-300">Logged in as 👤 <strong>User</strong></span>
+      <a href="/logout" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-xs font-bold transition">
+        Logout 🔒
+      </a>
+    </div>
+  </nav>
+  <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mb-6">
+    <div id="forecast-filters" class="flex flex-wrap items-center gap-4">
+
+      <div class="flex flex-col gap-1">
+        <label class="text-[10px] font-bold text-slate-400 uppercase">View Month</label>
+        <input type="month" name="forecast_period" value="{{ now.strftime('%Y-%m') }}" hx-get="/get-forecast"
+          hx-target="#forecast-container" hx-trigger="change, load"
+          hx-include="#forecast-filters input, #forecast-filters select"
+          class="border border-slate-200 p-2 rounded-lg text-xs font-bold text-slate-700 focus:outline-indigo-500">
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-[10px] font-bold text-slate-400 uppercase">Card</label>
+        <select name="card_id" hx-get="/get-forecast" hx-target="#forecast-container"
+          hx-include="#forecast-filters input, #forecast-filters select"
+          class="border border-slate-200 p-2 rounded-lg text-xs font-bold text-slate-700 focus:outline-indigo-500">
+          <option value="">All Cards</option>
+          {% for card in cards %}
+          <option value="{{ card.id }}">{{ card.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-[10px] font-bold text-slate-400 uppercase">Payee</label>
+        <select name="payee_id" hx-get="/get-forecast" hx-target="#forecast-container"
+          hx-include="#forecast-filters input, #forecast-filters select"
+          class="border border-slate-200 p-2 rounded-lg text-xs font-bold text-slate-700 focus:outline-indigo-500">
+          <option value="">All Payees</option>
+          {% for payee in payees %}
+          <option value="{{ payee.id }}">{{ payee.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="forecast-container"></div>
+  <!-- month summary  -->
+  <div class="w-full px-6">
+    <div id="summary-container" hx-get="/get-summary" hx-trigger="load" class="mb-6">
+      <div class="p-4 text-center text-slate-400">Loading summary...</div>
+    </div>
+  </div>
+  <!-- forms -->
+  <main class="w-full px-4">
+    <div class="grid grid-cols-12">
+      <div class="col-span-8 px-2">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <form hx-post="/add-installment" hx-target="#response-msg" hx-on::after-request="this.reset()"
+            class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="md:col-span-2">
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Description</label>
+                <input type="text" name="description" required
+                  class="w-full border-2 border-slate-100 p-2 rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Card</label>
+                <select name="card_id" hx-get="/get-cards" hx-target="this" hx-trigger="load" required
+                  class="w-full border-2 border-slate-100 p-2 rounded-lg bg-white"></select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1" required>Payee</label>
+                <select name="payee_id" hx-get="/get-payee" hx-target="this" hx-trigger="load" required
+                  class="w-full border-2 border-slate-100 p-2 rounded-lg bg-white"></select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Total Amount</label>
+                <input type="number" step="0.01" name="total_amount" required
+                  class="w-full border-2 border-slate-100 p-2 rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">
+                  Starting Month
+                </label>
+                <input type="month" name="start_period" required
+                  class="w-full border-2 border-slate-100 p-2 rounded-lg" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Tenor (Months)</label>
+                <select name="total_months" required class="w-full border-2 border-slate-100 p-2 rounded-lg bg-white">
+                  <option value="3">3 Months</option>
+                  <option value="6">6 Months</option>
+                  <option value="12" selected>12 Months</option>
+                  <option value="24">24 Months</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit"
+              class="w-full bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition mt-4">
+              Save Record
+            </button>
+          </form>
+          <div id="response-msg"></div>
+        </div>
+      </div>
+      <aside class="col-span-4 px-2 space-y-4">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <form hx-post="/add-card" hx-target="#response-card" hx-on::after-request="this.reset()" class="space-y-4">
+            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Card Name</label>
+            <input type="text" name="name" class="w-full border-2 border-slate-100 p-2 rounded-lg" required />
+            <button type="submit"
+              class="w-full bg-violet-600 text-white font-bold py-3 rounded-xl hover:bg-violet-700 transition">
+              Add Card
+            </button>
+          </form>
+          <div id="response-card" class="mt-4"></div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <form hx-post="/add-payee" hx-target="#response-payee" hx-on::after-request="this.reset()" class="space-y-4">
+            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Payee Name</label>
+            <input type="text" name="name" placeholder="e.g., Self, John, Sarah"
+              class="w-full border-2 border-slate-100 p-2 rounded-lg" required />
+            <button type="submit"
+              class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-black transition">
+              Add Payee
+            </button>
+          </form>
+          <div id="response-payee" class="mt-4"></div>
+        </div>
+    </div>
+    </div>
+
+    <div class="bg-white mt-8 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div id="installment-list-container" hx-get="/get-list" hx-trigger="load"
+        class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+
+        <div class="p-20 text-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+          <p class="text-slate-400 animate-pulse">Fetching your installments...</p>
+        </div>
+      </div>
+    </div>
+
+
+  </main>
+</body>
+
+</html>

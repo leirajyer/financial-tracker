@@ -1,0 +1,68 @@
+<form hx-post="/add-installment" hx-indicator="#form-spinner" class="space-y-6">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="md:col-span-2">
+            <label
+                class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Description</label>
+            <input type="text" name="description" placeholder="e.g. MacBook Pro M3" required
+                class="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-indigo-500 focus:ring-0 transition-all outline-none" />
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Card used</label>
+            <select name="card_id" hx-get="/get-cards" hx-target="this" hx-trigger="load" required
+                class="w-full border-2 border-slate-100 p-3 rounded-xl bg-white focus:border-indigo-500 outline-none">
+                <option value="">Loading cards...</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Payee</label>
+            <select name="payee_id" hx-get="/get-payee" hx-target="this" hx-trigger="load" required
+                class="w-full border-2 border-slate-100 p-3 rounded-xl bg-white focus:border-indigo-500 outline-none">
+                <option value="">Loading payees...</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total
+                Amount</label>
+            <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₱</span>
+                <input type="number" step="0.01" name="total_amount" required placeholder="0.00"
+                    class="w-full border-2 border-slate-100 p-3 pl-8 rounded-xl focus:border-indigo-500 outline-none font-mono" />
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">First Due
+                Month</label>
+            <input type="month" name="start_period" value="{{ now.strftime('%Y-%m') }}" required
+                class="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-indigo-500 outline-none" />
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tenor
+                (Months)</label>
+            <select name="total_months" required
+                class="w-full border-2 border-slate-100 p-3 rounded-xl bg-white focus:border-indigo-500 outline-none font-bold">
+                <option value="1">Straight Payment</option>
+                <option value="3">3 Months</option>
+                <option value="6">6 Months</option>
+                <option value="12" selected>12 Months</option>
+                <option value="24">24 Months</option>
+                <option value="36">36 Months</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="pt-4">
+        <button type="submit"
+            class="w-full bg-indigo-600 text-white font-black py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95 flex justify-center items-center gap-3">
+            <span>SAVE INSTALLMENT</span>
+            <div id="form-spinner"
+                class="htmx-indicator animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full">
+            </div>
+        </button>
+    </div>
+</form>
