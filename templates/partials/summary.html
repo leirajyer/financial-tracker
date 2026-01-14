@@ -1,31 +1,25 @@
-<div
-  id="dashboard-summary"
-  hx-swap-oob="true"
-  class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 mt-8"
->
-  <div class="bg-white p-6 rounded-xl shadow-sm border-t-4 border-indigo-500">
-    <p class="text-slate-500 text-sm font-medium uppercase">
-      Total Monthly Burn
-    </p>
-    <h2 class="text-3xl font-bold text-slate-800">
-      ₱{{ "{:,.2f}".format(total_burn) }}
-    </h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+    <p class="text-xs font-bold text-slate-400 uppercase">Monthly Burn</p>
+    <p class="text-2xl font-black text-indigo-600">₱{{ "{:,.2f}".format(total_burn) }}</p>
   </div>
 
-  <div
-    class="bg-white p-6 rounded-xl shadow-sm col-span-2 border-t-4 border-emerald-500"
-  >
-    <p class="text-slate-500 text-sm font-medium uppercase mb-2">
-      Card Load Breakdown
-    </p>
-    <div class="flex flex-wrap gap-4">
-      {% for card_name, amount in card_totals.items() %}
-      <div class="bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
-        <span class="text-xs font-bold text-slate-600">{{ card_name }}:</span>
-        <span class="text-xs text-emerald-600 font-bold"
-          >₱{{ "{:,.2f}".format(amount) }}</span
-        >
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+    <p class="text-xs font-bold text-slate-400 uppercase">Remaining Debt</p>
+    <p class="text-2xl font-black text-orange-500">₱{{ "{:,.2f}".format(total_remaining) }}</p>
+  </div>
+
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Cards Active</p>
+    <div class="flex flex-wrap gap-2">
+      {% for card, total in card_totals.items() %}
+      <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full shadow-sm">
+        <span class="text-xs font-bold text-slate-600">{{ card }}</span>
+        <span class="w-px h-3 bg-slate-300"></span>
+        <span class="text-xs font-black text-indigo-600">₱{{ "{:,.2f}".format(total) }}</span>
       </div>
+      {% else %}
+      <p class="text-xs text-slate-400 italic">No active cards</p>
       {% endfor %}
     </div>
   </div>

@@ -1,17 +1,18 @@
 from fastapi import FastAPI, Request, Form, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from datetime import date
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from fastapi import Request
-from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import joinedload
 import bcrypt
+import logging
 
 # Modular Imports from your app folder
 from app.database import engine, SessionLocal, Base
 from app.models import User, Card, Payee, Installment
 from app.seed import seed_db
-from app.logic import calculate_monthly_totals  # Add this import
+from app.logic import get_monthly_forecast
+from app.logic import calculate_monthly_totals
 
 # Initialize Database - Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
@@ -26,22 +27,14 @@ async def startup_event():
 
 
 # --- AUTH ROUTES ---
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    if not request.cookies.get("is_logged_in"):
-        return RedirectResponse(url="/login")
-
-    db = SessionLocal()
-    # Get the calculated numbers
-    stats = calculate_monthly_totals(db)
-    db.close()
-
+@app.get("/")
+async def index(request: Request):
+    # Pass the current time so the HTML can format the default month
     return templates.TemplateResponse(
         "base.html",
         {
             "request": request,
-            "total_burn": stats["total_burn"],
-            "card_totals": stats["card_totals"],
+            "now": datetime.now(),  # This is the missing piece!
         },
     )
 
@@ -76,42 +69,40 @@ async def logout():
     return response
 
 
-@app.get("/get-list", response_class=HTMLResponse)
+@app.get("/get-list")
 async def get_list(request: Request):
     db = SessionLocal()
     try:
-        # 1. Fetch the raw installments
-        records = db.query(Installment).all()
+        # We explicitly JOIN card and payee here
+        records = (
+            db.query(Installment)
+            .options(joinedload(Installment.card), joinedload(Installment.payee))
+            .order_by(Installment.start_date.desc())
+            .all()
+        )
 
-        # 2. Run the logic to get total_burn and card_totals
+        # Calculate stats for the summary/list total if needed
         stats = calculate_monthly_totals(db)
 
-        # 3. Return the response with EVERY variable the template needs
         return templates.TemplateResponse(
             "partials/list.html",
-            {
-                "request": request,
-                "records": records,
-                "total_burn": stats["total_burn"],
-                "card_totals": stats["card_totals"],
-                "total_remaining": stats.get("total_remaining", 0),
-            },
+            {"request": request, "records": records, "total_burn": stats["total_burn"]},
         )
     finally:
-        db.close()
+        db.close()  # Now the door closes, but the data is already inside 'records'
 
 
 # --- HTMX SELECT LOADERS ---
 
 
-@app.get("/get-owners")
-async def get_owners():
+@app.get("/get-payee")
+async def get_payee():
     db = SessionLocal()
-    owners = db.query(Payee).all()
+    payee = db.query(Payee).all()
     db.close()
     # Ensure value="{o.id}" has no extra escaped quotes
     options = '<option value="" disabled selected>Select Payee</option>'
-    for o in owners:
+    for o in payee:
         options += f"<option value={o.id}>{o.name}</option>"
     return options
 
@@ -140,10 +131,10 @@ async def add_card(response: Response, name: str = Form(...)):
     return ""
 
 
-@app.post("/add-owner")
-async def add_owner(response: Response, name: str = Form(...)):
+@app.post("/add-payee")
+async def add_payee(response: Response, name: str = Form(...)):
     db = SessionLocal()
-    db.add(Owner(name=name))
+    db.add(Payee(name=name))
     db.commit()
     db.close()
     response.headers["HX-Trigger"] = "ownerListChanged"
@@ -152,16 +143,17 @@ async def add_owner(response: Response, name: str = Form(...)):
 
 @app.post("/add-installment")
 async def add_installment(
-    request: Request,  # Added request parameter
+    request: Request,
     response: Response,
     description: str = Form(...),
     card_id: int = Form(...),
     total_amount: float = Form(...),
     total_months: int = Form(...),
     payee_id: int = Form(...),
-    start_date: date = Form(...),
+    start_period: str = Form(...),
 ):
-    # 1. Logic for Straight vs Installment
+    # 1. Logic for Date Calculation
+    start_date = datetime.strptime(start_period, "%Y-%m").date()
     actual_months = total_months if total_months > 1 else 1
     monthly = total_amount / actual_months
 
@@ -184,39 +176,99 @@ async def add_installment(
     db.add(new_item)
     db.commit()
 
-    # 3. Recalculate Stats for the Summary update
+    # 3. Fetch Data BEFORE closing the DB
     stats = calculate_monthly_totals(db)
+    # Important: joinedload here ensures the list has Card/Payee names
+    records = (
+        db.query(Installment)
+        .options(joinedload(Installment.card), joinedload(Installment.payee))
+        .all()
+    )
     db.close()
 
-    # 4. Prepare Multi-part Response
-    success_msg = '<div class="p-2 bg-green-100 text-green-700 rounded text-sm">✅ Added Successfully</div>'
+    # 4. Prepare Multi-part Response strings
+    success_msg = '<div class="p-2 bg-green-100 text-green-700 rounded text-sm mb-4">✅ Added Successfully</div>'
 
-    # Ensure "request" is passed here so Jinja2 doesn't fail
     summary_html = templates.get_template("partials/summary.html").render(
         {
             "request": request,
             "total_burn": stats["total_burn"],
             "card_totals": stats["card_totals"],
-            "total_remaining": stats["total_remaining"],
+            "total_remaining": stats.get("total_remaining", 0),
         }
     )
 
-    # 5. Trigger List Refresh and Return
-    response.headers["HX-Trigger"] = "listChanged"
+    list_html = templates.get_template("partials/list.html").render(
+        {"request": request, "records": records}
+    )
 
-    # Concatenating success message + the OOB summary partial
-    return HTMLResponse(content=success_msg + summary_html)
+    # 5. Wrap with OOB IDs (Ensure these match your index.html IDs)
+    summary_oob = f'<div id="summary-container" hx-swap-oob="true">{summary_html}</div>'
+    list_oob = (
+        f'<div id="installment-list-container" hx-swap-oob="true">{list_html}</div>'
+    )
+
+    return HTMLResponse(content=success_msg + summary_oob + list_oob)
 
 
 @app.delete("/delete-installment/{item_id}")
-async def delete_installment(item_id: int):
+async def delete_installment(request: Request, item_id: int):
     db = SessionLocal()
-    item = db.query(Installment).filter(Installment.id == item_id).first()
-    if item:
-        db.delete(item)
-        db.commit()
-    db.close()
-    return ""
+    try:
+        # 1. Find and delete the item
+        item = db.query(Installment).filter(Installment.id == item_id).first()
+        if item:
+            db.delete(item)
+            db.commit()
+
+        # 2. Fetch fresh records WITH Card and Payee data
+        # This is the part that prevents the Error on line 41!
+        records = (
+            db.query(Installment)
+            .options(joinedload(Installment.card), joinedload(Installment.payee))
+            .order_by(Installment.start_date.desc())
+            .all()
+        )
+
+        # 3. Recalculate stats for the OOB summary update
+        stats = calculate_monthly_totals(db)
+
+        # 4. Prepare the OOB summary
+        summary_html = templates.get_template("partials/summary.html").render(
+            {"request": request, **stats}
+        )
+        summary_oob = (
+            f'<div id="summary-container" hx-swap-oob="true">{summary_html}</div>'
+        )
+
+        # 5. Return the list (HTMX will swap this into the list container)
+        return templates.TemplateResponse(
+            "partials/list.html",
+            {"request": request, "records": records, "total_burn": stats["total_burn"]},
+            headers={"Content-Type": "text/html"},  # Ensure browser treats it as HTML
+        )
+    finally:
+        db.close()  # Safely close after all data is fetched
+
+
+@app.get("/get-summary")
+async def get_summary(request: Request):
+    db = SessionLocal()
+    try:
+        # Use your existing logic function to get totals
+        stats = calculate_monthly_totals(db)
+
+        return templates.TemplateResponse(
+            "partials/summary.html",
+            {
+                "request": request,
+                "total_burn": stats["total_burn"],
+                "card_totals": stats["card_totals"],
+                "total_remaining": stats.get("total_remaining", 0),
+            },
+        )
+    finally:
+        db.close()
 
 
 # Payee
@@ -243,3 +295,26 @@ async def get_payees(request: Request):
     return HTMLResponse(
         content=f'<option value="" disabled selected>Select Payee</option>{options}'
     )
+
+
+# Forecast
+@app.get("/get-forecast")
+async def get_forecast(request: Request, forecast_period: str = None):
+    # Fallback: If for some reason forecast_period is missing, use current month
+    if not forecast_period:
+        forecast_period = datetime.now().strftime("%Y-%m")
+
+    try:
+        yr, mo = map(int, forecast_period.split("-"))
+
+        db = SessionLocal()
+        # Using our logic from Step 2 with eager loading
+        data = get_monthly_forecast(db, yr, mo)
+        db.close()
+
+        return templates.TemplateResponse(
+            "partials/forecast.html", {"request": request, **data}
+        )
+    except Exception as e:
+        print(f"Forecast Error: {e}")
+        return HTMLResponse(f"Error: {str(e)}", status_code=500)
