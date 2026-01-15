@@ -1,11 +1,15 @@
+from app.models import CardMonthlyStatus
 from fastapi import FastAPI, Request, Form, Response, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import joinedload
+from typing import Optional
+
+import datetime
+from datetime import datetime as dt
 import bcrypt
-import logging
 
 # Modular Imports from your app folder
 from app.database import engine, SessionLocal, Base
@@ -13,6 +17,7 @@ from app.models import User, Card, Payee, Installment
 from app.seed import seed_db
 from app.logic import get_monthly_forecast
 from app.logic import calculate_monthly_totals
+from app.logic import get_card_status
 
 # Initialize Database - Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
@@ -30,22 +35,27 @@ async def startup_event():
 @app.get("/")
 async def index(request: Request):
     db = SessionLocal()
-    # Fetch lists for the forecast filters
-    cards = db.query(Card).all()
-    payees = db.query(Payee).all()
-    stats = calculate_monthly_totals(db)
-    db.close()
+    try:
+        # 1. Use the full path for now
+        now_obj = datetime.datetime.now()
 
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "now": datetime.now(),
-            "cards": cards,
-            "payees": payees,
-            "total_burn": stats["total_burn"],
-        },
-    )
+        # 2. Get your existing stats
+        stats = calculate_monthly_totals(db)
+        cards = db.query(Card).all()
+        payees = db.query(Payee).all()
+
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "now": now_obj,  # Pass the fixed object
+                "total_burn": stats["total_burn"],
+                "cards": cards,
+                "payees": payees,
+            },
+        )
+    finally:
+        db.close()
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -161,7 +171,7 @@ async def add_installment(
     start_period: str = Form(...),
 ):
     # 1. Logic for Date Calculation (Keep this exactly as you had it)
-    start_date = datetime.strptime(start_period, "%Y-%m").date()
+    start_date = datetime.datetime.strptime(start_period, "%Y-%m").date()
     actual_months = total_months if total_months > 1 else 1
     monthly = total_amount / actual_months
 
@@ -301,45 +311,71 @@ async def get_payees(request: Request):
 #         return HTMLResponse(f"Error: {str(e)}", status_code=500)
 
 
-from typing import Optional  # Add this to your imports
-
-
 @app.get("/get-forecast")
 async def get_forecast(
     request: Request,
     forecast_period: str = None,
-    card_id: Optional[str] = Query(None),  # Change int to Optional[str]
-    payee_id: Optional[str] = Query(None),  # Change int to Optional[str]
+    card_id: Optional[str] = Query(None),
+    payee_id: Optional[str] = Query(None),
 ):
-    if not forecast_period:
-        forecast_period = datetime.now().strftime("%Y-%m")
+    # 1. Standardize Date Handling (using full path to avoid AttributeError)
+    now_obj = datetime.datetime.now()
 
-    yr, mo = map(int, forecast_period.split("-"))
+    if not forecast_period or not forecast_period.strip():
+        yr, mo = now_obj.year, now_obj.month
+    else:
+        try:
+            yr, mo = map(int, forecast_period.split("-"))
+        except (ValueError, AttributeError):
+            yr, mo = now_obj.year, now_obj.month
 
-    # Convert to int only if they are not empty strings
-    c_id = int(card_id) if card_id and card_id.strip() else None
-    p_id = int(payee_id) if payee_id and payee_id.strip() else None
+    # 2. Critical: Convert Query Strings to Integers for the DB logic
+    c_id = int(card_id) if card_id and card_id.strip() and card_id != "None" else None
+    p_id = (
+        int(payee_id) if payee_id and payee_id.strip() and payee_id != "None" else None
+    )
 
     db = SessionLocal()
-    data = get_monthly_forecast(db, yr, mo, card_id=c_id, payee_id=p_id)
-    db.close()
+    try:
+        data = get_monthly_forecast(db, yr, mo, card_id=c_id, payee_id=p_id)
 
-    return templates.TemplateResponse(
-        "partials/forecast.html", {"request": request, **data}
-    )
+        return templates.TemplateResponse(
+            "partials/forecast.html",
+            {
+                "request": request,
+                "now": now_obj,
+                "items": data.get("items", []),
+                "total_due": data.get("total_due", 0.0),
+                "card_data": data.get("card_data", {}),  # The new name
+                "card_split": data.get(
+                    "card_data", {}
+                ),  # ALIAS to stop the UndefinedError
+                "month_name": data.get("month_name", "Unknown"),
+                "year": yr,
+                "month": mo,
+            },
+        )
+    finally:
+        db.close()
 
 
 @app.get("/records")
 async def records_page(request: Request):
-    # Just like the index, we need to pass 'now' for the nav ticker
     db = SessionLocal()
-    stats = calculate_monthly_totals(db)
-    db.close()
+    try:
+        stats = calculate_monthly_totals(db)
+        # ... your other logic (fetching cards, installments, etc.) ...
 
-    return templates.TemplateResponse(
-        "records_page.html",
-        {"request": request, "now": datetime.now(), "total_burn": stats["total_burn"]},
-    )
+        return templates.TemplateResponse(
+            "records_page.html",
+            {
+                "request": request,
+                "now": datetime.datetime.now(),  # <--- FIX: Change this line
+                "total_burn": stats["total_burn"],
+            },
+        )
+    finally:
+        db.close()
 
 
 @app.get("/add")
@@ -353,7 +389,7 @@ async def add_page(request: Request):
             "add_page.html",
             {
                 "request": request,
-                "now": datetime.now(),
+                "now": datetime.datetime.now(),
                 "total_burn": stats["total_burn"],
             },
         )
@@ -365,5 +401,74 @@ async def add_page(request: Request):
 async def get_add_form(request: Request):
     # We pass 'now' so the 'Starting Month' input can default to the current month
     return templates.TemplateResponse(
-        "partials/form.html", {"request": request, "now": datetime.now()}
+        "partials/form.html", {"request": request, "now": datetime.datetime.now()}
     )
+
+
+@app.post("/toggle-card-status/{card_id}/{year}/{month}")
+async def toggle_card_status(card_id: int, year: int, month: int):
+    db = SessionLocal()
+    period = f"{year}-{month:02d}"
+
+    status_record = (
+        db.query(CardMonthlyStatus)
+        .filter(
+            CardMonthlyStatus.card_id == card_id, CardMonthlyStatus.month_year == period
+        )
+        .first()
+    )
+
+    if not status_record:
+        # If no record exists, they clicked it, so we mark it as PAID
+        status_record = CardMonthlyStatus(
+            card_id=card_id,
+            month_year=period,
+            is_paid=True,
+            paid_at=datetime.datetime.now(),
+        )
+        db.add(status_record)
+    else:
+        # Toggle the existing state
+        status_record.is_paid = not status_record.is_paid
+        status_record.paid_at = (
+            datetime.datetime.now() if status_record.is_paid else None
+        )
+
+    db.commit()
+
+    # 1. Get the fresh status string ("PAID", "PENDING", or "OVERDUE")
+    # This calls your smart logic to see if it should be yellow or red if unpaid
+    new_status = get_card_status(db, card_id, year, month)
+    db.close()
+
+    # 2. Return the HTML Badge fragment
+    # We MUST pass card_id, year, and month so the new button is also clickable
+    return HTMLResponse(content=render_status_badge(new_status, card_id, year, month))
+
+    # Get new status to return the correct badge
+    new_status = get_card_status(db, card_id, year, month)
+    db.close()
+
+    # Return just the badge HTML (You can extract this to a small partial)
+    # For now, we return a simple string or the partial
+    return HTMLResponse(content=render_status_badge(new_status))  # Create this helper!
+
+
+def render_status_badge(status, card_id, year, month):
+    # CSS logic based on status
+    if status == "PAID":
+        styles = "bg-emerald-100 text-emerald-700 border-emerald-200"
+    elif status == "OVERDUE":
+        styles = "bg-rose-100 text-rose-700 border-rose-200 animate-pulse"
+    else:
+        styles = "bg-amber-100 text-amber-700 border-amber-200"
+
+    # We rebuild the <div> so HTMX can swap it perfectly
+    return f"""
+    <div id="status-badge-{card_id}" 
+         hx-post="/toggle-card-status/{card_id}/{year}/{month}"
+         hx-swap="outerHTML"
+         class="cursor-pointer px-3 py-1 rounded-full text-[10px] font-black border transition-all {styles}">
+        {status}
+    </div>
+    """

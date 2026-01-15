@@ -8,18 +8,20 @@
     <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
       <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Card Load</p>
       <div class="flex flex-wrap gap-2 mt-2">
-        {% for card, amt in card_split.items() %}
-        <div class="bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm">
-          <span class="text-[10px] font-bold text-slate-700">{{ card }}:</span>
-          <span class="text-[10px] font-bold text-emerald-600">₱{{ "{:,.2f}".format(amt) }}</span>
+        {% for card_name, info in card_data.items() %}
+        <div class="bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm flex items-center gap-2">
+          <span class="text-[10px] font-bold text-slate-700">{{ card_name }}:</span>
+          <span class="text-[10px] font-bold text-emerald-600">₱{{ "{:,.2f}".format(info.total) }}</span>
+          <div class="w-1.5 h-1.5 rounded-full 
+        {% if info.status == 'PAID' %} bg-emerald-400 
+        {% elif info.status == 'OVERDUE' %} bg-rose-400 animate-pulse 
+        {% else %} bg-amber-400 {% endif %}">
+          </div>
         </div>
         {% else %}
-        <tr>
-          <td colspan="5" class="px-4 py-20 text-center">
-            <p class="text-slate-400 italic text-sm">No active installments match these filters.</p>
-            <p class="text-[10px] text-slate-300 uppercase mt-2">Try changing the month, card, or payee</p>
-          </td>
-        </tr>
+        <div class="w-full py-4 text-center">
+          <p class="text-slate-400 italic text-xs">No active cards found for this period.</p>
+        </div>
         {% endfor %}
       </div>
     </div>
@@ -68,4 +70,22 @@
       </tbody>
     </table>
   </div>
+
+  {% for card_name, info in card_data.items() %}
+  <div class="flex justify-between items-center bg-slate-50 p-4 border-b border-slate-200">
+    <div class="flex items-center gap-3">
+      <h3 class="font-black text-slate-700 uppercase text-xs">{{ card_name }}</h3>
+
+      <div id="status-badge-{{ info.id }}" hx-post="/toggle-card-status/{{ info.id }}/{{ year }}/{{ month }}"
+        hx-swap="outerHTML" class="cursor-pointer px-3 py-1 rounded-full text-[10px] font-black border transition-all
+           {% if info.status == 'PAID' %} bg-emerald-100 text-emerald-700 border-emerald-200
+           {% elif info.status == 'OVERDUE' %} bg-rose-100 text-rose-700 border-rose-200 animate-pulse
+           {% else %} bg-amber-100 text-amber-700 border-amber-200 {% endif %}">
+        {{ info.status }}
+      </div>
+    </div>
+
+    <span class="font-mono font-bold text-slate-600">₱{{ "{:,.2f}".format(info.total) }}</span>
+  </div>
+  {% endfor %}
 </div>

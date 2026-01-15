@@ -1,4 +1,13 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    Date,
+    ForeignKey,
+    Boolean,
+    DateTime,
+)
 from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import date
@@ -73,3 +82,15 @@ class Installment(Base):
         prog = self.get_progress()
         months_left = prog["total"] - prog["current"]
         return months_left * self.monthly_payment if months_left > 0 else 0.0
+
+
+class CardMonthlyStatus(Base):
+    __tablename__ = "card_monthly_statuses"
+
+    id = Column(Integer, primary_key=True)
+    card_id = Column(Integer, ForeignKey("cards.id"))
+    month_year = Column(String)  # Format: "2026-01"
+    is_paid = Column(Boolean, default=False)
+    paid_at = Column(DateTime, nullable=True)
+
+    card = relationship("Card")
