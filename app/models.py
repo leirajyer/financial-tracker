@@ -11,9 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from .database import Base
 from datetime import date
-from dateutil.relativedelta import (
-    relativedelta,
-)  # You'll need to pip install python-dateutil
+from dateutil.relativedelta import relativedelta
 
 
 class User(Base):
@@ -23,19 +21,10 @@ class User(Base):
     hashed_password = Column(String)
 
 
-class Card(Base):
-    __tablename__ = "cards"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
-    installments = relationship("Installment", back_populates="card")
-
-
 class Payee(Base):
-    __tablename__ = "payees"  # Renamed table
+    __tablename__ = "payees"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
-
-    # Update the relationship back-reference
     installments = relationship("Installment", back_populates="payee")
 
 
@@ -56,13 +45,11 @@ class Installment(Base):
 
     @property
     def total_months_count(self):
-        """Calculates total months including the first and last month."""
         if not self.start_date or not self.end_date:
             return 1
         diff = relativedelta(self.end_date, self.start_date)
-        # We add 1 so Jan to Jan = 1 month, Jan to Feb = 2 months
         total = (diff.years * 12) + diff.months + 1
-        return total if total > 0 else 1
+        return max(total, 1)
 
     def get_progress(self):
         today = date.today()
@@ -81,16 +68,29 @@ class Installment(Base):
     def get_remaining_balance(self):
         prog = self.get_progress()
         months_left = prog["total"] - prog["current"]
-        return months_left * self.monthly_payment if months_left > 0 else 0.0
+        return float(months_left * self.monthly_payment) if months_left > 0 else 0.0
+
+
+# app/models.py
+
+
+class Card(Base):
+    __tablename__ = "cards"
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+    due_day = Column(Integer, default=15)
+
+    installments = relationship("Installment", back_populates="card")
+    monthly_statuses = relationship("CardMonthlyStatus", back_populates="card")
 
 
 class CardMonthlyStatus(Base):
-    __tablename__ = "card_monthly_statuses"
-
+    __tablename__ = "card_monthly_statuses"  # Ensure this is unique
     id = Column(Integer, primary_key=True)
     card_id = Column(Integer, ForeignKey("cards.id"))
-    month_year = Column(String)  # Format: "2026-01"
+    month_year = Column(String)
     is_paid = Column(Boolean, default=False)
     paid_at = Column(DateTime, nullable=True)
 
-    card = relationship("Card")
+    # This MUST match the attribute name in the Card class
+    card = relationship("Card", back_populates="monthly_statuses")

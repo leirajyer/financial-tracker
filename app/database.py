@@ -1,17 +1,21 @@
-# Database Imports
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker
 
-# --- DATABASE SETUP ---
-DATABASE_URL = "sqlite:///./installments.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///./financial.db"
 
-# 1. Create the engine with standard SQLite arguments ONLY
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-
-# 2. Disable RETURNING globally using execution_options
-# This prevents the 'RETURNING' error on older Macs without crashing the engine
-engine = engine.execution_options(insert_returning=False)
-
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 Base = declarative_base()
+
+
+# This is the "Magic" function for your routes
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

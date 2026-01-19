@@ -1,21 +1,42 @@
 <div class="animate-in fade-in slide-in-from-bottom-2 duration-500">
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-    <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+    <div class="col-span-1 lg:col-span-4 bg-indigo-50 p-5 rounded-2xl border border-indigo-100">
       <p class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest">Forecast for {{ month_name }}</p>
       <h3 class="text-3xl font-black text-indigo-900">₱{{ "{:,.2f}".format(total_due) }}</h3>
     </div>
 
-    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+    <div class="col-span-1 lg:col-span-8 bg-slate-50 p-5 rounded-2xl border border-slate-100">
       <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Card Load</p>
       <div class="flex flex-wrap gap-2 mt-2">
         {% for card_name, info in card_data.items() %}
-        <div class="bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm flex items-center gap-2">
-          <span class="text-[10px] font-bold text-slate-700">{{ card_name }}:</span>
-          <span class="text-[10px] font-bold text-emerald-600">₱{{ "{:,.2f}".format(info.total) }}</span>
-          <div class="w-1.5 h-1.5 rounded-full 
-        {% if info.status == 'PAID' %} bg-emerald-400 
-        {% elif info.status == 'OVERDUE' %} bg-rose-400 animate-pulse 
-        {% else %} bg-amber-400 {% endif %}">
+        <div
+          class="bg-white border border-slate-200 px-3 py-2 rounded-lg shadow-sm flex items-center justify-between gap-4">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="w-2 h-2 rounded-full shrink-0
+            {% if info.status == 'PAID' %} bg-emerald-400 
+            {% else %} bg-amber-400 {% endif %}">
+            </div>
+            <span class="text-[10px] font-bold text-slate-700 truncate">{{ card_name }}:</span>
+            <span class="text-[10px] font-bold text-emerald-600 shrink-0">₱{{ "{:,.2f}".format(info.total) }}</span>
+          </div>
+
+          <div id="status-container-{{ info.id }}" class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase border shrink-0
+            {% if info.status == 'PAID' %} bg-emerald-100 text-emerald-700 border-emerald-200
+            {% else %} bg-amber-100 text-amber-700 border-amber-200 {% endif %}">
+              {{ info.status }}
+            </span>
+
+            <button hx-post="/toggle-card-status/{{ info.id }}/{{ year }}/{{ month }}"
+              hx-target="#status-container-{{ info.id }}" hx-swap="outerHTML" class="px-2 pb-1 rounded-md border transition-all duration-200 shrink-0
+                   {% if info.status == 'PAID' %} bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100
+                   {% else %} bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 {% endif %}">
+              {% if info.status == 'PAID' %}
+              <span class="text-xs">🔄</span>
+              {% else %}
+              <span class="text-xs">✅</span>
+              {% endif %}
+            </button>
           </div>
         </div>
         {% else %}
@@ -71,21 +92,4 @@
     </table>
   </div>
 
-  {% for card_name, info in card_data.items() %}
-  <div class="flex justify-between items-center bg-slate-50 p-4 border-b border-slate-200">
-    <div class="flex items-center gap-3">
-      <h3 class="font-black text-slate-700 uppercase text-xs">{{ card_name }}</h3>
-
-      <div id="status-badge-{{ info.id }}" hx-post="/toggle-card-status/{{ info.id }}/{{ year }}/{{ month }}"
-        hx-swap="outerHTML" class="cursor-pointer px-3 py-1 rounded-full text-[10px] font-black border transition-all
-           {% if info.status == 'PAID' %} bg-emerald-100 text-emerald-700 border-emerald-200
-           {% elif info.status == 'OVERDUE' %} bg-rose-100 text-rose-700 border-rose-200 animate-pulse
-           {% else %} bg-amber-100 text-amber-700 border-amber-200 {% endif %}">
-        {{ info.status }}
-      </div>
-    </div>
-
-    <span class="font-mono font-bold text-slate-600">₱{{ "{:,.2f}".format(info.total) }}</span>
-  </div>
-  {% endfor %}
 </div>
