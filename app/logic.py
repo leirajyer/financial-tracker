@@ -1,69 +1,83 @@
 from datetime import datetime as dt, date
 from sqlalchemy.orm import joinedload
 from .models import Installment, CardMonthlyStatus
+import calendar
 
 
 def calculate_monthly_totals(db_session, year=None, month=None):
-    """Calculates summary stats, excluding PAID cards from the active burnout."""
+    """Calculates summary stats and separates cards by their payment status."""
     today = date.today()
-    # Use provided year/month or default to current
-    yr = year or today.year
-    mo = month or today.month
+    yr = int(year) if year else today.year
+    mo = int(month) if month else today.month
 
-    target_month_start = date(yr, mo, 1)
+    target_date = date(yr, mo, 1)
     month_year_str = f"{yr}-{mo:02d}"
 
-    # 1. Fetch all items and the status of cards for this month
     all_items = (
         db_session.query(Installment).options(joinedload(Installment.card)).all()
     )
 
-    # Get set of card IDs that are marked as PAID this month
     from app.models import CardMonthlyStatus
 
-    paid_card_ids = {
-        row.card_id
-        for row in db_session.query(CardMonthlyStatus.card_id)
-        .filter(
-            CardMonthlyStatus.month_year == month_year_str,
-            CardMonthlyStatus.is_paid == True,
-        )
+    statuses = (
+        db_session.query(CardMonthlyStatus)
+        .filter(CardMonthlyStatus.month_year == month_year_str)
         .all()
-    }
+    )
 
-    total_burn = 0  # This will now represent "Remaining to Pay"
+    paid_status_map = {s.card_id: s.is_paid for s in statuses}
+
+    total_burn = 0
     total_paid = 0
     total_remaining_debt = 0
-    card_totals = {}
+
+    # Separate collections for the UI
+    pending_cards = {}
+    paid_cards = {}
+    active_items = []
 
     for item in all_items:
-        # Check if item is active for the viewed month
-        if item.start_date <= target_month_start <= item.end_date:
-            name = item.card.name if item.card else "Unknown"
+        total_remaining_debt += item.get_remaining_balance()
+
+        if item.start_date <= target_date <= item.end_date:
+            active_items.append(item)
+            card = item.card
+            card_id = card.id if card else 0
+            card_name = card.name if card else "Unknown"
             payment = item.monthly_payment
+            is_paid = paid_status_map.get(card_id, False)
 
-            # Group by card for the breakdown
-            card_totals[name] = card_totals.get(name, 0) + payment
+            # Determine which collection to update
+            target_collection = paid_cards if is_paid else pending_cards
 
-            # LOGIC: If the card is PAID, it doesn't count towards the active burnout
-            if item.card_id in paid_card_ids:
+            if card_name not in target_collection:
+                target_collection[card_name] = {
+                    "id": card_id,
+                    "total": 0,
+                    "status": "PAID" if is_paid else "PENDING",
+                }
+
+            target_collection[card_name]["total"] += payment
+
+            if is_paid:
                 total_paid += payment
             else:
                 total_burn += payment
 
-        # Overall debt remains unaffected by monthly paid status
-        total_remaining_debt += item.get_remaining_balance()
-
-    # Calculate payment progress
-    grand_total = total_burn + total_paid
-    progress = (total_paid / grand_total * 100) if grand_total > 0 else 0
+    total_due = round(total_burn + total_paid, 2)
+    total_burn = round(total_burn, 2)
 
     return {
-        "total_burn": total_burn,  # Remaining "Pending" amount
-        "total_paid": total_paid,  # Amount already cleared
-        "progress": round(progress, 1),
-        "card_totals": card_totals,
-        "total_remaining": total_remaining_debt,
+        "total_burn": total_burn,
+        "total_paid": total_paid,
+        "total_due": total_due,
+        "progress": round((total_paid / total_due * 100), 1) if total_due > 0 else 0,
+        "pending_cards": pending_cards,  # Separated
+        "paid_cards": paid_cards,  # Separated
+        "items": active_items,
+        "month_name": calendar.month_name[mo],
+        "year": yr,
+        "month": mo,
     }
 
 
@@ -134,3 +148,35 @@ def get_monthly_forecast(db, year, month, card_id=None, payee_id=None):
         "year": year,
         "month": month,
     }
+
+
+def get_global_updates_fragment(db, year, month, toast_msg=None):
+    """Standardized helper for Out-of-Band UI updates with Fully Paid state."""
+    stats = calculate_monthly_totals(db, year, month)
+    total_val = stats.get("total_burn", 0)
+
+    # Check if balance is zero or less
+    if total_val < 0.01:
+        burn_display = '<span class="text-emerald-400 font-black animate-pulse">FULLY PAID 🎉</span>'
+    else:
+        burn_display = f"₱{total_val:,.2f}"
+
+    # 1. Burnout Fragment (targets your navbar ID)
+    fragments = [f'<span id="total-burnout" hx-swap-oob="true">{burn_display}</span>']
+
+    # 2. Toast Fragment
+    if toast_msg:
+        fragments.append(f"""
+            <div id="toast-container" hx-swap-oob="true" _="on load wait 3s then remove me"
+                 class="fixed bottom-5 right-5 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-opacity duration-500 z-50">
+                <span class="text-lg">🎉</span>
+                <span class="font-bold text-sm">{toast_msg}</span>
+            </div>
+        """)
+    else:
+        # Use hx-swap-oob to target the container and wipe its inner HTML AND classes
+        fragments.append(
+            '<div id="toast-container" hx-swap-oob="true" class="hidden"></div>'
+        )
+
+    return "".join(fragments)

@@ -38,6 +38,7 @@ async def index(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "now": dt.now(),
             "total_burn": stats["total_burn"],
+            "total_due": stats["total_due"],
             "cards": db.query(Card).all(),
             "payees": db.query(Payee).all(),
         },

@@ -31,10 +31,16 @@
 
     <div class="flex items-center gap-6">
       <div id="nav-total-burn"
-        class="hidden md:flex items-center gap-2 bg-indigo-800/50 px-4 py-1.5 rounded-full border border-indigo-700">
-        <span class="text-[9px] uppercase font-black text-indigo-300">Monthly Total:</span>
+        class="hidden md:flex items-center gap-2 bg-indigo-800/50 px-4 py-1.5 rounded-full border border-indigo-700 transition-all duration-500">
+        <span class="text-[9px] uppercase font-black text-indigo-300">Remaining Balance:</span>
         <span id="nav-total-value" class="text-sm font-mono font-bold text-emerald-400">
-          ₱{{ "{:,.2f}".format(total_burn) if total_burn else "0.00" }}
+          <span id="total-burnout">
+            {% if total_burn and total_burn > 0 %}
+            ₱{{ "{:,.2f}".format(total_burn) }}
+            {% else %}
+            <span class="text-emerald-400">FULLY PAID 🎉</span>
+            {% endif %}
+          </span>
         </span>
       </div>
 
@@ -65,7 +71,18 @@
       &copy; 2026 Financial Tracker - Day 8 Build
     </div>
   </footer>
+  <div id="toast-container"></div>
 
+  <script>
+    document.body.addEventListener('htmx:afterOnLoad', function (evt) {
+      const toast = document.getElementById('toast-container');
+      if (toast && toast.innerText.trim() !== "") {
+        setTimeout(() => {
+          toast.innerHTML = "";
+        }, 3000);
+      }
+    });
+  </script>
 </body>
 
 </html>

@@ -1,95 +1,78 @@
 <div class="animate-in fade-in slide-in-from-bottom-2 duration-500">
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
-    <div class="col-span-1 lg:col-span-4 bg-indigo-50 p-5 rounded-2xl border border-indigo-100">
-      <p class="text-indigo-600 text-[10px] font-bold uppercase tracking-widest">Forecast for {{ month_name }}</p>
-      <h3 class="text-3xl font-black text-indigo-900">₱{{ "{:,.2f}".format(total_due) }}</h3>
-    </div>
-
-    <div class="col-span-1 lg:col-span-8 bg-slate-50 p-5 rounded-2xl border border-slate-100">
-      <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Card Load</p>
-      <div class="flex flex-wrap gap-2 mt-2">
-        {% for card_name, info in card_data.items() %}
-        <div
-          class="bg-white border border-slate-200 px-3 py-2 rounded-lg shadow-sm flex items-center justify-between gap-4">
-          <div class="flex items-center gap-2 min-w-0">
-            <div class="w-2 h-2 rounded-full shrink-0
-            {% if info.status == 'PAID' %} bg-emerald-400 
-            {% else %} bg-amber-400 {% endif %}">
-            </div>
-            <span class="text-[10px] font-bold text-slate-700 truncate">{{ card_name }}:</span>
-            <span class="text-[10px] font-bold text-emerald-600 shrink-0">₱{{ "{:,.2f}".format(info.total) }}</span>
-          </div>
-
-          <div id="status-container-{{ info.id }}" class="flex items-center gap-2">
-            <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase border shrink-0
-            {% if info.status == 'PAID' %} bg-emerald-100 text-emerald-700 border-emerald-200
-            {% else %} bg-amber-100 text-amber-700 border-amber-200 {% endif %}">
-              {{ info.status }}
-            </span>
-
-            <button hx-post="/toggle-card-status/{{ info.id }}/{{ year }}/{{ month }}"
-              hx-target="#status-container-{{ info.id }}" hx-swap="outerHTML" class="px-2 pb-1 rounded-md border transition-all duration-200 shrink-0
-                   {% if info.status == 'PAID' %} bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100
-                   {% else %} bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 {% endif %}">
-              {% if info.status == 'PAID' %}
-              <span class="text-xs">🔄</span>
-              {% else %}
-              <span class="text-xs">✅</span>
-              {% endif %}
-            </button>
+  <div class="grid grid-cols-12 gap-4">
+    <div class="col-span-1 lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-100">
+      <div id="card-status-wrapper" class="space-y-6">
+        {% if stats.pending_cards %}
+        <div>
+          <h4 class="text-[10px] font-black text-amber-600 uppercase mb-2">To Pay ⏳</h4>
+          <div class="flex flex-wrap gap-2">
+            {% for card_name, info in stats.pending_cards.items() %}
+            {% include "partials/card_badge.html" %}
+            {% endfor %}
           </div>
         </div>
-        {% else %}
-        <div class="w-full py-4 text-center">
-          <p class="text-slate-400 italic text-xs">No active cards found for this period.</p>
+        {% endif %}
+
+        {% if stats.paid_cards %}
+        <div>
+          <h4 class="text-[10px] font-black text-emerald-600 uppercase mb-2">Settled ✅</h4>
+          <div class="flex flex-wrap gap-2 opacity-80">
+            {% for card_name, info in stats.paid_cards.items() %}
+            {% include "partials/card_badge.html" %}
+            {% endfor %}
+          </div>
         </div>
-        {% endfor %}
+        {% endif %}
       </div>
     </div>
+
+    <div class="col-span-2 lg:col-span-8 overflow-hidden border border-slate-100 rounded-xl">
+      <table class="w-full text-left bg-white">
+        <thead class="bg-slate-50 text-[10px] text-slate-400 uppercase font-bold">
+          <tr>
+            <th class="px-4 py-3">Description</th>
+            <th class="px-4 py-3">Card</th>
+            <th class="px-4 py-3">Timeline</th>
+            <th class="px-4 py-3 text-right">Monthly Due</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          {% for item in items %}
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-4 py-3 text-sm font-medium text-slate-700">{{ item.description }}</td>
+            <td class="px-4 py-3 text-xs text-slate-500"><span
+                class="bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm bg-green-50">{{ item.card.name if
+                item.card
+                else "Self" }}</span>
+              <p class="text-[10px] text-orange-600 font-normal block mt-3">Payee: <span class="text-slate-700">{{
+                  item.payee.name if item.payee
+                  else
+                  "Self" }}</span></span>
+            </td>
+            <td class="px-4 py-3 text-xs text-slate-500">
+
+              <p class="text-[10px] text-slate-400 font-normal mt-1">
+                {% set prog = item.get_progress() %} {% set left = prog.total -
+                prog.current %} {% if prog.total == 1 %}
+                <span class="text-amber-600 font-bold uppercase text-[9px]">Straight Payment</span>
+                {% else %} {{ left }} {{ 'month' if left == 1 else 'months' }} left
+                {% endif %}
+              </p>{{ item.start_date.strftime("%B %Y") }} - {{
+              item.end_date.strftime("%B %Y") }}
+            </td>
+            <td class="px-4 py-3 text-sm text-right font-bold text-slate-900">₱{{ "{:,.2f}".format(item.monthly_payment)
+              }}<span class="text-[10px] text-slate-400 font-normal block">₱{{ "{:,.2f}".format(item.total_amount)
+                }}</span></td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="px-4 py-10 text-center text-slate-400 italic text-sm">
+              No active installments for this month.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-
-  <div class="overflow-hidden border border-slate-100 rounded-xl">
-    <table class="w-full text-left bg-white">
-      <thead class="bg-slate-50 text-[10px] text-slate-400 uppercase font-bold">
-        <tr>
-          <th class="px-4 py-3">Description</th>
-          <th class="px-4 py-3">Payee</th>
-          <th class="px-4 py-3">Card</th>
-          <th class="px-4 py-3">Timeline</th>
-          <th class="px-4 py-3 text-right">Monthly Due</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-50">
-        {% for item in items %}
-        <tr class="hover:bg-slate-50 transition-colors">
-          <td class="px-4 py-3 text-sm font-medium text-slate-700">{{ item.description }}</td>
-          <td class="px-4 py-3 text-xs text-slate-500">{{ item.payee.name if item.payee else "Self" }}</td>
-          <td class="px-4 py-3 text-xs text-slate-500"><span
-              class="bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm">{{ item.card.name if item.card
-              else "Self" }}</td>
-          <td class="px-4 py-3 text-xs text-slate-500">
-
-            <p class="text-[10px] text-slate-400 font-normal mt-1">
-              {% set prog = item.get_progress() %} {% set left = prog.total -
-              prog.current %} {% if prog.total == 1 %}
-              <span class="text-amber-600 font-bold uppercase text-[9px]">Straight Payment</span>
-              {% else %} {{ left }} {{ 'month' if left == 1 else 'months' }} left
-              {% endif %}
-            </p>{{ item.start_date.strftime("%B %Y") }} - {{
-            item.end_date.strftime("%B %Y") }}
-          </td>
-          <td class="px-4 py-3 text-sm text-right font-bold text-slate-900">₱{{ "{:,.2f}".format(item.monthly_payment)
-            }}</td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="5" class="px-4 py-10 text-center text-slate-400 italic text-sm">
-            No active installments for this month.
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
 </div>

@@ -4,8 +4,17 @@ from sqlalchemy.orm import Session
 from datetime import datetime as dt
 
 from app.database import get_db
-from app.logic import get_monthly_forecast, get_card_status
+from app.logic import (
+    get_monthly_forecast,
+    get_card_status,
+    calculate_monthly_totals,
+    get_global_updates_fragment,
+)
 from app.models import CardMonthlyStatus, Card
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="templates")
+
 
 router = APIRouter()
 
@@ -28,19 +37,34 @@ def render_status_badge(status, card_id, year, month, card_name="this card"):
     """
 
 
-@router.get("/get-forecast")
+@router.get("/get-forecast", response_class=HTMLResponse)
 async def get_forecast(
     request: Request,
-    forecast_period: str = None,
-    card_id: str = Query(None),
+    forecast_period: str = Query(None),
     db: Session = Depends(get_db),
 ):
-    # (Same logic as before, just using 'router' decorator)
-    pass
+    # Parse period string "YYYY-MM"
+    year, month = None, None
+    if forecast_period:
+        year, month = map(int, forecast_period.split("-"))
 
+    # 1. Get the unified data object
+    stats = calculate_monthly_totals(db, year, month)
 
-# Change the path to include {year} and {month}
-from fastapi.responses import HTMLResponse
+    # 2. Render the partial with the full context
+    # This prevents 'total_burn' or 'items' from being Undefined
+    forecast_html = templates.TemplateResponse(
+        "partials/forecast.html",
+        {
+            "request": request,
+            **stats,  # This unpacks all keys (total_burn, items, month_name, etc.)
+        },
+    ).body.decode()
+
+    # 3. Append the OOB update for the Navbar
+    global_updates = get_global_updates_fragment(db, stats["year"], stats["month"])
+
+    return HTMLResponse(content=forecast_html + global_updates)
 
 
 @router.post(
@@ -59,7 +83,7 @@ async def toggle_card_status(
         .first()
     )
 
-    # Toggle Logic
+    # 1. Toggle Logic
     if status_obj:
         status_obj.is_paid = not status_obj.is_paid
         status_obj.paid_at = dt.now() if status_obj.is_paid else None
@@ -71,11 +95,26 @@ async def toggle_card_status(
 
     db.commit()
 
-    # Determine new state for the UI
-    new_status = "PAID" if status_obj.is_paid else "PENDING"
+    # 2. Get Updated Totals and Separated Lists
+    stats = calculate_monthly_totals(db, year, month)
 
-    # Return ONLY the updated fragment
-    return render_status_fragment(card_id, new_status, year, month)
+    # 3. Render the updated Card Status Container
+    # We use hx-swap-oob="true" on the container wrapper in this template
+    status_container_html = templates.TemplateResponse(
+        "partials/card_status_container.html",
+        {
+            "request": {},  # Empty request or pass actual if needed
+            "year": year,
+            "month": month,
+            **stats,
+        },
+    ).body.decode()
+
+    # 4. Get Global UI Updates (Burnout + Toast)
+    msg = f"{status_obj.card.name if status_obj.card else 'Card'} Updated!"
+    global_html = get_global_updates_fragment(db, year, month, toast_msg=msg)
+
+    return HTMLResponse(content=status_container_html + global_html)
 
 
 def render_status_fragment(card_id, status, year, month):
@@ -91,7 +130,7 @@ def render_status_fragment(card_id, status, year, month):
         if is_paid
         else "bg-emerald-50 border-emerald-200 text-emerald-600"
     )
-    icon = "↪️" if is_paid else "✅"
+    icon = "🔄" if is_paid else "✅"
 
     return f"""
     <div id="status-container-{card_id}" class="flex items-center gap-3">
@@ -100,6 +139,7 @@ def render_status_fragment(card_id, status, year, month):
         </span>
         <button hx-post="/toggle-card-status/{card_id}/{year}/{month}"
                 hx-target="#status-container-{card_id}"
+                hx-confirm="Are you sure you want to change status of the card?"
                 hx-swap="outerHTML"
                 class="p-1.5 rounded-md border transition-all duration-200 {btn_cls} hover:opacity-80">
             {icon}

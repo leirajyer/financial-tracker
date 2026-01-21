@@ -108,7 +108,7 @@ async def get_forecast(
     p_id = (
         int(payee_id) if payee_id and payee_id.strip() and payee_id != "None" else None
     )
-
+    stats = calculate_monthly_totals(db)
     # 3. Use 'db' from Depends (No SessionLocal or db.close needed)
     data = get_monthly_forecast(db, yr, mo, card_id=c_id, payee_id=p_id)
 
@@ -120,9 +120,10 @@ async def get_forecast(
             "items": data.get("items", []),
             "total_due": data.get("total_due", 0.0),
             "card_data": data.get("card_data", {}),
-            "card_split": data.get("card_data", {}),  # Keeping alias for compatibility
+            "card_split": data.get("card_data", {}),
             "month_name": data.get("month_name", "Unknown"),
             "year": yr,
             "month": mo,
+            "stats": stats,
         },
     )

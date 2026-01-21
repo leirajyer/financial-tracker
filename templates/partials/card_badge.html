@@ -1,0 +1,32 @@
+<div
+    class="bg-white border border-slate-200 px-3 py-2 rounded-lg shadow-sm flex items-center justify-between gap-4 w-full">
+    <div class="flex items-center gap-2 min-w-0">
+        <div class="w-2 h-2 rounded-full shrink-0
+            {% if info.status == 'PAID' %} bg-emerald-400 
+            {% else %} bg-amber-400 {% endif %}">
+        </div>
+        <span class="text-[10px] font-bold text-slate-700 truncate">{{ card_name }}:</span>
+        <span class="text-[10px] font-bold text-emerald-600 shrink-0">₱{{ "{:,.2f}".format(info.total) }}</span>
+    </div>
+
+    <div id="status-container-{{ info.id }}" class="flex items-center gap-2">
+        <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase border shrink-0
+            {% if info.status == 'PAID' %} bg-emerald-100 text-emerald-700 border-emerald-200
+            {% else %} bg-amber-100 text-amber-700 border-amber-200 {% endif %}">
+            {{ info.status }}
+        </span>
+
+        <button hx-post="/toggle-card-status/{{ info.id }}/{{ year }}/{{ month }}"
+            hx-confirm="Are you sure you want to change status for {{ card_name }}?"
+            hx-target="#status-container-{{ info.id }}" hx-swap="outerHTML" class="px-2 pb-1 rounded-md border transition-all duration-200 shrink-0
+                {% if info.status == 'PAID' %} bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100
+                {% else %} bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 {% endif %}"
+            title="{% if info.status == 'PAID' %}Revert to pending{% else %}Mark as paid{% endif %}">
+            {% if info.status == 'PAID' %}
+            <span class="text-xs">🔄</span>
+            {% else %}
+            <span class="text-xs">✅</span>
+            {% endif %}
+        </button>
+    </div>
+</div>
