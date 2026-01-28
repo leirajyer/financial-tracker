@@ -13,7 +13,11 @@ templates = Jinja2Templates(directory="templates")
 # Local App Imports
 from app.database import get_db
 from app.models import Installment, Card, Payee
-from app.logic import calculate_monthly_totals, get_monthly_forecast
+from app.logic import (
+    calculate_monthly_totals,
+    get_monthly_forecast,
+    get_global_updates_fragment,
+)
 
 
 @router.post("/add-installment")
@@ -84,46 +88,91 @@ async def get_cards(db: Session = Depends(get_db)):
 # app/routes/forecast.py (or installments.py)
 
 
-@router.get("/get-forecast")
+# Updated /get-forecast in installment.py
+# installments.py
+
+
+@router.get("/get-forecast", response_class=HTMLResponse)
 async def get_forecast(
     request: Request,
-    forecast_period: Optional[str] = Query(None),  # Standardized Optional
+    forecast_period: Optional[str] = Query(None),
     card_id: Optional[str] = Query(None),
     payee_id: Optional[str] = Query(None),
-    db: Session = Depends(get_db),  # <--- ADDED Dependency Injection
+    db: Session = Depends(get_db),
 ):
-    # 1. Standardize Date Handling
+    # 1. Date Parsing
     now_obj = dt.now()
-
-    if not forecast_period or not forecast_period.strip():
-        yr, mo = now_obj.year, now_obj.month
-    else:
+    yr, mo = now_obj.year, now_obj.month
+    if forecast_period and "-" in forecast_period:
         try:
             yr, mo = map(int, forecast_period.split("-"))
-        except (ValueError, AttributeError):
-            yr, mo = now_obj.year, now_obj.month
+        except (ValueError, IndexError):
+            pass
 
-    # 2. Convert Query Strings to Integers for the DB logic
+    # 2. Convert Filter Strings to Integers
     c_id = int(card_id) if card_id and card_id.strip() and card_id != "None" else None
     p_id = (
         int(payee_id) if payee_id and payee_id.strip() and payee_id != "None" else None
     )
-    stats = calculate_monthly_totals(db)
-    # 3. Use 'db' from Depends (No SessionLocal or db.close needed)
-    data = get_monthly_forecast(db, yr, mo, card_id=c_id, payee_id=p_id)
 
-    return templates.TemplateResponse(
+    # 3. Get Filtered Data
+    stats = calculate_monthly_totals(db, yr, mo, card_id=c_id, payee_id=p_id)
+
+    # 4. Render main partial
+    forecast_html = templates.TemplateResponse(
         "partials/forecast.html",
         {
             "request": request,
             "now": now_obj,
-            "items": data.get("items", []),
-            "total_due": data.get("total_due", 0.0),
-            "card_data": data.get("card_data", {}),
-            "card_split": data.get("card_data", {}),
-            "month_name": data.get("month_name", "Unknown"),
             "year": yr,
             "month": mo,
-            "stats": stats,
+            **stats,  # Unpack so pending_cards/paid_cards are top-level
         },
+    ).body.decode()
+
+    # 5. Sync Navbar with filtered total
+    global_updates = get_global_updates_fragment(
+        db, yr, mo, card_id=c_id, payee_id=p_id
     )
+
+    return HTMLResponse(content=forecast_html + global_updates)
+
+
+@router.delete("/delete-installment/{rec_id}", response_class=HTMLResponse)
+async def delete_installment(
+    request: Request, rec_id: int, db: Session = Depends(get_db)
+):
+    # 1. Perform the deletion
+    item = db.query(Installment).filter(Installment.id == rec_id).first()
+    if item:
+        db.delete(item)
+        db.commit()
+
+    # 2. Re-fetch all records for the refreshed list
+    records = (
+        db.query(Installment)
+        .options(joinedload(Installment.card), joinedload(Installment.payee))
+        .order_by(Installment.start_date.desc())
+        .all()
+    )
+
+    # 3. Calculate current totals for the OOB navbar update
+    now = dt.now()
+    stats = calculate_monthly_totals(db, now.year, now.month)
+
+    # 4. Render the list partial
+    list_html = templates.TemplateResponse(
+        "partials/list.html",
+        {
+            "request": request,
+            "records": records,
+            **stats,  # Unpacks total_burn for the list view
+        },
+    ).body.decode()
+
+    # 5. Get Global Navbar/Burnout Updates
+    global_html = get_global_updates_fragment(
+        db, now.year, now.month, toast_msg="Installment deleted!"
+    )
+
+    return HTMLResponse(content=list_html + global_html)

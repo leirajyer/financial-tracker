@@ -4,7 +4,9 @@ from .models import Installment, CardMonthlyStatus
 import calendar
 
 
-def calculate_monthly_totals(db_session, year=None, month=None):
+def calculate_monthly_totals(
+    db_session, year=None, month=None, card_id=None, payee_id=None
+):
     """Calculates summary stats and separates cards by their payment status."""
     today = date.today()
     yr = int(year) if year else today.year
@@ -13,11 +15,14 @@ def calculate_monthly_totals(db_session, year=None, month=None):
     target_date = date(yr, mo, 1)
     month_year_str = f"{yr}-{mo:02d}"
 
-    all_items = (
-        db_session.query(Installment).options(joinedload(Installment.card)).all()
-    )
+    query = db_session.query(Installment).options(joinedload(Installment.card))
 
-    from app.models import CardMonthlyStatus
+    if card_id:
+        query = query.filter(Installment.card_id == card_id)
+    if payee_id:
+        query = query.filter(Installment.payee_id == payee_id)
+
+    all_items = query.all()
 
     statuses = (
         db_session.query(CardMonthlyStatus)
@@ -150,9 +155,13 @@ def get_monthly_forecast(db, year, month, card_id=None, payee_id=None):
     }
 
 
-def get_global_updates_fragment(db, year, month, toast_msg=None):
+def get_global_updates_fragment(
+    db, year, month, card_id=None, payee_id=None, toast_msg=None
+):
     """Standardized helper for Out-of-Band UI updates with Fully Paid state."""
-    stats = calculate_monthly_totals(db, year, month)
+    stats = calculate_monthly_totals(
+        db, year, month, card_id=card_id, payee_id=payee_id
+    )
     total_val = stats.get("total_burn", 0)
 
     # Check if balance is zero or less
@@ -163,6 +172,9 @@ def get_global_updates_fragment(db, year, month, toast_msg=None):
 
     # 1. Burnout Fragment (targets your navbar ID)
     fragments = [f'<span id="total-burnout" hx-swap-oob="true">{burn_display}</span>']
+    fragments.append(
+        f'<span id="nav-remaining-value" class="text-sm font-bold text-red-600 bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm bg-red-100" hx-swap-oob="true">{burn_display}</span>'
+    )
 
     # 2. Toast Fragment
     if toast_msg:

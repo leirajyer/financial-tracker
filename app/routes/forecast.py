@@ -117,32 +117,32 @@ async def toggle_card_status(
     return HTMLResponse(content=status_container_html + global_html)
 
 
-def render_status_fragment(card_id, status, year, month):
-    """Helper to return the exact HTML fragment for the row."""
-    is_paid = status == "PAID"
-    badge_cls = (
-        "bg-emerald-100 text-emerald-700 border-emerald-200"
-        if is_paid
-        else "bg-amber-100 text-amber-700 border-amber-200"
-    )
-    btn_cls = (
-        "bg-gray-50 border-gray-200 text-gray-500"
-        if is_paid
-        else "bg-emerald-50 border-emerald-200 text-emerald-600"
-    )
-    icon = "🔄" if is_paid else "✅"
+# def render_status_fragment(card_id, status, year, month):
+#     """Helper to return the exact HTML fragment for the row."""
+#     is_paid = status == "PAID"
+#     badge_cls = (
+#         "bg-emerald-100 text-emerald-700 border-emerald-200"
+#         if is_paid
+#         else "bg-amber-100 text-amber-700 border-amber-200"
+#     )
+#     btn_cls = (
+#         "bg-gray-50 border-gray-200 text-gray-500"
+#         if is_paid
+#         else "bg-emerald-50 border-emerald-200 text-emerald-600"
+#     )
+#     icon = "🔄" if is_paid else "✅"
 
-    return f"""
-    <div id="status-container-{card_id}" class="flex items-center gap-3">
-        <span class="px-2 py-1 rounded text-[10px] font-black uppercase border {badge_cls}">
-            {status}
-        </span>
-        <button hx-post="/toggle-card-status/{card_id}/{year}/{month}"
-                hx-target="#status-container-{card_id}"
-                hx-confirm="Are you sure you want to change status of the card?"
-                hx-swap="outerHTML"
-                class="p-1.5 rounded-md border transition-all duration-200 {btn_cls} hover:opacity-80">
-            {icon}
-        </button>
-    </div>
-    """
+#     return f"""
+#     <div id="status-container-{card_id}" class="flex items-center gap-3">
+#         <span class="px-2 py-1 rounded text-[10px] font-black uppercase border {badge_cls}">
+#             {status}
+#         </span>
+#         <button hx-post="/toggle-card-status/{card_id}/{year}/{month}"
+#                 hx-target="#status-container-{card_id}"
+#                 hx-confirm="Are you sure you want to change status of the card?"
+#                 hx-swap="outerHTML"
+#                 class="p-1.5 rounded-md border transition-all duration-200 {btn_cls} hover:opacity-80">
+#             {icon}
+#         </button>
+#     </div>
+#     """

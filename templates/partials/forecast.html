@@ -2,25 +2,31 @@
   <div class="grid grid-cols-12 gap-4">
     <div class="col-span-1 lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-100">
       <div id="card-status-wrapper" class="space-y-6">
-        {% if stats.pending_cards %}
+        {% if pending_cards or paid_cards %}
+        {% if pending_cards %}
         <div>
           <h4 class="text-[10px] font-black text-amber-600 uppercase mb-2">To Pay ⏳</h4>
           <div class="flex flex-wrap gap-2">
-            {% for card_name, info in stats.pending_cards.items() %}
+            {% for card_name, info in pending_cards.items() %}
             {% include "partials/card_badge.html" %}
             {% endfor %}
           </div>
         </div>
         {% endif %}
 
-        {% if stats.paid_cards %}
+        {% if paid_cards %}
         <div>
           <h4 class="text-[10px] font-black text-emerald-600 uppercase mb-2">Settled ✅</h4>
           <div class="flex flex-wrap gap-2 opacity-80">
-            {% for card_name, info in stats.paid_cards.items() %}
+            {% for card_name, info in paid_cards.items() %}
             {% include "partials/card_badge.html" %}
             {% endfor %}
           </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center">
+          <h4 class="px-4 py-10 text-center text-slate-400 italic text-sm">No Installments</h4>
         </div>
         {% endif %}
       </div>
@@ -47,7 +53,7 @@
               <p class="text-[10px] text-orange-600 font-normal block mt-3">Payee: <span class="text-slate-700">{{
                   item.payee.name if item.payee
                   else
-                  "Self" }}</span></span>
+                  "Self" }}</span></p>
             </td>
             <td class="px-4 py-3 text-xs text-slate-500">
 
@@ -67,7 +73,7 @@
           {% else %}
           <tr>
             <td colspan="5" class="px-4 py-10 text-center text-slate-400 italic text-sm">
-              No active installments for this month.
+              No active installments
             </td>
           </tr>
           {% endfor %}
