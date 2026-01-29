@@ -9,6 +9,7 @@ from app.models import Card, Payee
 from app.seed import seed_db
 from app.routes import dashboard_router, installments_router
 from app.routes.forecast import router as forecast_router
+from app.routes.settings import router as settings_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -27,11 +28,13 @@ async def startup_event():
 app.include_router(dashboard_router)
 app.include_router(installments_router)
 app.include_router(forecast_router)
+app.include_router(settings_router)
 
 
 @app.get("/")
 async def index(request: Request, db: Session = Depends(get_db)):
-    stats = calculate_monthly_totals(db)
+    now = dt.now()
+    stats = calculate_monthly_totals(db, year=now.year, month=now.month)
     return templates.TemplateResponse(
         "index.html",
         {

@@ -32,11 +32,10 @@ def calculate_monthly_totals(
 
     paid_status_map = {s.card_id: s.is_paid for s in statuses}
 
-    total_burn = 0
-    total_paid = 0
+    total_burn = 0  # Unpaid amount
+    total_paid = 0  # Paid amount
     total_remaining_debt = 0
 
-    # Separate collections for the UI
     pending_cards = {}
     paid_cards = {}
     active_items = []
@@ -47,17 +46,18 @@ def calculate_monthly_totals(
         if item.start_date <= target_date <= item.end_date:
             active_items.append(item)
             card = item.card
-            card_id = card.id if card else 0
+            c_id = (
+                card.id if card else 0
+            )  # Use c_id to avoid overwriting function param card_id
             card_name = card.name if card else "Unknown"
             payment = item.monthly_payment
-            is_paid = paid_status_map.get(card_id, False)
+            is_paid = paid_status_map.get(c_id, False)
 
-            # Determine which collection to update
             target_collection = paid_cards if is_paid else pending_cards
 
             if card_name not in target_collection:
                 target_collection[card_name] = {
-                    "id": card_id,
+                    "id": c_id,
                     "total": 0,
                     "status": "PAID" if is_paid else "PENDING",
                 }
@@ -69,16 +69,24 @@ def calculate_monthly_totals(
             else:
                 total_burn += payment
 
+    # --- MATH CLEANUP (After the loop) ---
+
+    # 1. total_due is the sum of what's paid and what's left
     total_due = round(total_burn + total_paid, 2)
-    total_burn = round(total_burn, 2)
+
+    # 2. Calculate percentage based on actual totals calculated in the loop
+    percentage_paid = 0
+    if total_due > 0:
+        percentage_paid = round((total_paid / total_due) * 100)
 
     return {
-        "total_burn": total_burn,
-        "total_paid": total_paid,
+        "total_burn": round(total_burn, 2),
+        "total_paid": round(total_paid, 2),
         "total_due": total_due,
-        "progress": round((total_paid / total_due * 100), 1) if total_due > 0 else 0,
-        "pending_cards": pending_cards,  # Separated
-        "paid_cards": paid_cards,  # Separated
+        "total_remaining_debt": round(total_remaining_debt, 2),
+        "percentage_paid": percentage_paid,
+        "pending_cards": pending_cards,
+        "paid_cards": paid_cards,
         "items": active_items,
         "month_name": calendar.month_name[mo],
         "year": yr,

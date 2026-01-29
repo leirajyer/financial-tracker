@@ -3,16 +3,6 @@
     <div class="col-span-1 lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-100">
       <div id="card-status-wrapper" class="space-y-6">
         {% if pending_cards or paid_cards %}
-        {% if pending_cards %}
-        <div>
-          <h4 class="text-[10px] font-black text-amber-600 uppercase mb-2">To Pay ⏳</h4>
-          <div class="flex flex-wrap gap-2">
-            {% for card_name, info in pending_cards.items() %}
-            {% include "partials/card_badge.html" %}
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
 
         {% if paid_cards %}
         <div>
@@ -24,6 +14,19 @@
           </div>
         </div>
         {% endif %}
+
+        {% if pending_cards %}
+        <div>
+          <h4 class="text-[10px] font-black text-amber-600 uppercase mb-2">To Pay ⏳</h4>
+          <div class="flex flex-wrap gap-2">
+            {% for card_name, info in pending_cards.items() %}
+            {% include "partials/card_badge.html" %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+
         {% else %}
         <div class="text-center">
           <h4 class="px-4 py-10 text-center text-slate-400 italic text-sm">No Installments</h4>
