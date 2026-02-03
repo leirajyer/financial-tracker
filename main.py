@@ -33,10 +33,20 @@ app.include_router(settings_router)
 
 @app.get("/")
 async def index(request: Request, db: Session = Depends(get_db)):
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+        },
+    )
+
+
+@app.get("/installments")
+async def index(request: Request, db: Session = Depends(get_db)):
     now = dt.now()
     stats = calculate_monthly_totals(db, year=now.year, month=now.month)
     return templates.TemplateResponse(
-        "index.html",
+        "installments.html",
         {
             "request": request,
             "now": dt.now(),

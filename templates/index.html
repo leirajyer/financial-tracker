@@ -1,13 +1,5 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="animate-in fade-in duration-500">
-    <div hx-get="/get-summary" hx-trigger="load" class="mb-8"></div>
-
-    {% include "partials/forecast_filters.html" %}
-
-    <div id="forecast-container" hx-get="/get-forecast" hx-trigger="load" class="mt-6">
-        <div class="p-20 text-center text-slate-300">Calculating...</div>
-    </div>
-</div>
+Welcome to my financial tracker!
 {% endblock %}

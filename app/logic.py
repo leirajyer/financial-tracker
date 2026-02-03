@@ -79,6 +79,12 @@ def calculate_monthly_totals(
     if total_due > 0:
         percentage_paid = round((total_paid / total_due) * 100)
 
+    # Trend Analysis Logic
+    three_months_out = get_debt_burn_down(db_session, months_to_forecast=4)[3]
+    future_total = three_months_out["total"]
+    savings_delta = total_due - future_total
+    percent_drop = round((savings_delta / total_due * 100)) if total_due > 0 else 0
+
     return {
         "total_burn": round(total_burn, 2),
         "total_paid": round(total_paid, 2),
@@ -91,6 +97,9 @@ def calculate_monthly_totals(
         "month_name": calendar.month_name[mo],
         "year": yr,
         "month": mo,
+        "savings_delta": savings_delta,
+        "percent_drop": percent_drop,
+        "avg_monthly_burn": round(total_due, 2),
     }
 
 
@@ -200,3 +209,34 @@ def get_global_updates_fragment(
         )
 
     return "".join(fragments)
+
+
+def get_debt_burn_down(db_session, months_to_forecast=12):
+    """Day 10: Calculates the total monthly bill for the next X months."""
+    today = date.today()
+    forecast = []
+    items = db_session.query(Installment).all()
+
+    for i in range(months_to_forecast):
+        target_month = (today.month + i - 1) % 12 + 1
+        target_year = today.year + (today.month + i - 1) // 12
+        target_date = date(target_year, target_month, 1)
+
+        monthly_total = sum(
+            item.monthly_payment
+            for item in items
+            if item.start_date <= target_date <= item.end_date
+        )
+
+        forecast.append(
+            {"month": target_date.strftime("%b %Y"), "total": round(monthly_total, 2)}
+        )
+    return forecast
+
+
+def get_freedom_date(db_session):
+    """Day 10: Finds the furthest end_date for the 'Freedom' milestone."""
+    items = db_session.query(Installment).all()
+    if not items:
+        return "No active debt"
+    return max(item.end_date for item in items).strftime("%B %Y")

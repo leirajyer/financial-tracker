@@ -1,0 +1,102 @@
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
+
+    <div class="lg:col-span-1 flex">
+        <div class="w-full bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">
+                        Monthly<br>Health</h3>
+                    <span class="text-2xl font-black text-indigo-600 leading-none">{{ percentage_paid }}%</span>
+                </div>
+                <p class="text-sm font-bold text-slate-800 mb-6">{{ month_name }}</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="w-full bg-slate-100 h-8 rounded-2xl overflow-hidden relative">
+                    <div class="bg-indigo-500 h-full transition-all duration-1000 ease-out"
+                        style="width: {{ percentage_paid }}%"></div>
+                    <span
+                        class="absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase text-white drop-shadow-sm">
+                        {{ percentage_paid }}% Cleared
+                    </span>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
+                        <span>Paid</span>
+                        <span class="text-slate-700">₱{{ "{:,.2f}".format(total_paid) }}</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
+                        <span>Pending</span>
+                        <span class="text-red-500">₱{{ "{:,.2f}".format(total_burn) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:col-span-3">
+        <div class="bg-slate-900 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-200/20 h-full">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h3 class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Financial Horizon
+                    </h3>
+                    <p class="text-2xl font-bold">Estimated Debt Free: <span class="text-indigo-300 italic">{{
+                            freedom_month }}</span></p>
+                </div>
+                <div class="flex gap-2">
+                    <div class="bg-indigo-500/20 px-4 py-2 rounded-xl border border-indigo-500/30">
+                        <span class="text-indigo-400 text-[10px] font-black tracking-widest uppercase">12-Month
+                            Projection</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-12 gap-6">
+                {% for f in future_forecast %}
+                <div class="flex flex-col justify-between group">
+                    <div>
+                        <p
+                            class="text-[10px] font-black text-slate-500 uppercase mb-1 group-hover:text-indigo-400 transition-colors">
+                            {{ f.month }}</p>
+                        <p class="text-sm font-black mb-3 {% if f.total == 0 %}text-emerald-400{% endif %}">
+                            ₱{{ "{:,.0f}".format(f.total) }}
+                        </p>
+                    </div>
+
+                    <div class="w-full bg-slate-800 h-24 rounded-2xl overflow-hidden relative flex items-end">
+                        <div class="bg-gradient-to-t from-indigo-600 to-indigo-400 w-full transition-all duration-1000 delay-{{ loop.index0 * 100 }}"
+                            style="height: {{ (f.total / total_due * 100) if total_due > 0 else 0 }}%">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div
+                class="mt-8 pt-6 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                        <span class="text-xl">📈</span>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Trend Analysis</p>
+                        <p class="text-sm text-slate-300">
+                            By <span class="text-white font-bold">{{ future_forecast[3].month }}</span>, your monthly
+                            liability will drop by
+                            <span class="text-emerald-400 font-black">₱{{ "{:,.2f}".format(savings_delta) }}</span>
+                            ({{ percent_drop }}% decrease).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <div class="px-4 py-2 bg-slate-800 rounded-xl border border-slate-700">
+                        <p class="text-[8px] font-black text-slate-500 uppercase">Avg. Monthly Burn</p>
+                        <p class="text-xs font-bold text-slate-200">₱{{ "{:,.2f}".format(total_due) }}</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
