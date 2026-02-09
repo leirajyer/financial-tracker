@@ -85,8 +85,8 @@
     <div class="grid grid-cols-12">
       <div class="col-span-8 px-2">
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <form hx-post="/add-installment" hx-target="#response-msg" hx-on::after-request="this.reset()"
-            class="space-y-4">
+          <form hx-post="/add-installment" hx-indicator="#form-spinner"
+            hx-on::after-request="if(event.detail.successful) this.reset()" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div class="md:col-span-2">
                 <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Description</label>

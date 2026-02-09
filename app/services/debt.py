@@ -1,6 +1,6 @@
 from datetime import datetime as dt, date
 from sqlalchemy.orm import joinedload
-from .models import Installment, CardMonthlyStatus
+from app.models import Installment, CardMonthlyStatus
 import calendar
 
 

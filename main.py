@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime as dt
 
 from app.database import engine, Base, get_db
-from app.logic import calculate_monthly_totals
+from app.services.debt import calculate_monthly_totals
 from app.models import Card, Payee
 from app.seed import seed_db
 from app.routes import dashboard_router, installments_router

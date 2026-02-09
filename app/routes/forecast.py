@@ -4,12 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime as dt
 
 from app.database import get_db
-from app.logic import (
-    get_monthly_forecast,
-    get_card_status,
-    calculate_monthly_totals,
-    get_global_updates_fragment,
-)
+from app.services import debt, cashflow, horizon
 from app.models import CardMonthlyStatus, Card
 from fastapi.templating import Jinja2Templates
 

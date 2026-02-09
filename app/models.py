@@ -21,6 +21,17 @@ class User(Base):
     hashed_password = Column(String)
 
 
+class Category(Base):
+    __tablename__ = "categories"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    color = Column(String, default="#94a3b8")  # Default Slate color
+
+    # Unified links for both CC Debt and CashFlow
+    installments = relationship("Installment", back_populates="category")
+    cash_flows = relationship("CashFlow", back_populates="category")
+
+
 class Payee(Base):
     __tablename__ = "payees"
     id = Column(Integer, primary_key=True, index=True)
@@ -39,7 +50,9 @@ class Installment(Base):
 
     card_id = Column(Integer, ForeignKey("cards.id"))
     payee_id = Column(Integer, ForeignKey("payees.id"))
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
 
+    category = relationship("Category", back_populates="installments")
     card = relationship("Card", back_populates="installments")
     payee = relationship("Payee", back_populates="installments")
 
@@ -54,15 +67,12 @@ class Installment(Base):
     def get_progress(self):
         today = date.today()
         total = self.total_months_count
-
         if today < self.start_date:
             return {"percent": 0, "current": 0, "total": total}
-
         diff = relativedelta(today, self.start_date)
         current = (diff.years * 12) + diff.months + 1
         current_capped = min(current, total)
         percent = (current_capped / total) * 100
-
         return {"percent": round(percent, 1), "current": current_capped, "total": total}
 
     def get_remaining_balance(self):
@@ -71,26 +81,35 @@ class Installment(Base):
         return float(months_left * self.monthly_payment) if months_left > 0 else 0.0
 
 
-# app/models.py
-
-
 class Card(Base):
     __tablename__ = "cards"
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
     due_day = Column(Integer, default=15)
+    color = Column(String, default="#6366f1")  # Default Indigo
 
     installments = relationship("Installment", back_populates="card")
     monthly_statuses = relationship("CardMonthlyStatus", back_populates="card")
 
 
 class CardMonthlyStatus(Base):
-    __tablename__ = "card_monthly_statuses"  # Ensure this is unique
+    __tablename__ = "card_monthly_statuses"
     id = Column(Integer, primary_key=True)
     card_id = Column(Integer, ForeignKey("cards.id"))
     month_year = Column(String)
     is_paid = Column(Boolean, default=False)
     paid_at = Column(DateTime, nullable=True)
 
-    # This MUST match the attribute name in the Card class
     card = relationship("Card", back_populates="monthly_statuses")
+
+
+class CashFlow(Base):
+    __tablename__ = "cash_flows"
+    id = Column(Integer, primary_key=True, index=True)
+    description = Column(String)  # e.g., "Salary", "Rent"
+    amount = Column(Float)  # Positive = Income, Negative = Expense
+    is_recurring = Column(Boolean, default=True)
+    month_year = Column(String, nullable=True)  # "2026-02"
+
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    category = relationship("Category", back_populates="cash_flows")

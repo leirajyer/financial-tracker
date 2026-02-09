@@ -13,9 +13,9 @@
         </a>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 grid-cols-1 gap-8">
 
-        <div class="space-y-6">
+        <div class="space-y-4">
             <section class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-3 bg-blue-50 rounded-2xl text-xl">💳</div>
@@ -27,22 +27,30 @@
                 </div>
 
                 <form hx-post="/add-card" hx-swap="none" hx-on::after-request="if(event.detail.successful) this.reset()"
-                    class="flex gap-2">
-                    <input type="text" name="name" placeholder="e.g. BPI Blue Visa" required
-                        class="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 transition-all">
+                    class="flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <input type="text" name="name" placeholder="e.g. BPI Blue Visa" required
+                            class="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700">
+
+                        <div class="relative">
+                            <input type="color" name="color" value="#6366f1"
+                                class="w-14 h-11 bg-slate-50 border-none rounded-2xl cursor-pointer p-1 transition-all hover:bg-slate-100">
+                        </div>
+                    </div>
+
                     <button type="submit"
-                        class="px-6 bg-blue-600 text-white rounded-2xl text-sm font-black hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all">
-                        ADD
+                        class="w-full py-3 bg-blue-600 text-white rounded-2xl text-sm font-black hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all shadow-lg shadow-blue-100">
+                        ADD CARD
                     </button>
                 </form>
             </section>
 
-            <div id="card-list" class="space-y-2">
+            <div id="card-list" hx-swap-oob="true" class="grid grid-cols-2 gap-2">
                 {% include "partials/settings_card_list.html" %}
             </div>
         </div>
 
-        <div class="space-y-6">
+        <div class="space-y-4">
             <section class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-3 bg-emerald-50 rounded-2xl text-xl">🏢</div>
@@ -54,18 +62,50 @@
                 </div>
 
                 <form hx-post="/add-payee" hx-swap="none"
-                    hx-on::after-request="if(event.detail.successful) this.reset()" class="flex gap-2">
-                    <input type="text" name="name" placeholder="e.g. Amazon" required
-                        class="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500 transition-all">
+                    hx-on::after-request="if(event.detail.successful) this.reset()" class="flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <input type="text" name="name" placeholder="e.g. Amazon" required
+                            class="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500 transition-all">
+                    </div>
                     <button type="submit"
-                        class="px-6 bg-emerald-600 text-white rounded-2xl text-sm font-black hover:bg-emerald-700 hover:scale-[1.02] active:scale-95 transition-all">
-                        ADD
+                        class="w-full py-3 bg-emerald-600 text-white rounded-2xl text-sm font-black hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all shadow-lg shadow-blue-100">
+                        ADD PAYEE
                     </button>
                 </form>
             </section>
 
             <div id="payee-list" class="space-y-2">
                 {% include "partials/settings_payee_list.html" %}
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <section class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-3 bg-purple-50 rounded-2xl text-xl">🏷️</div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 leading-none">Spending Categories</h3>
+                        <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Electrical,
+                            Water, etc.</p>
+                    </div>
+                </div>
+
+                <form hx-post="/add-category" hx-swap="none"
+                    hx-on::after-request="if(event.detail.successful) this.reset()" class="flex flex-col gap-3">
+                    <div class="flex gap-2">
+                        <input type="text" name="name" placeholder="New Category Name" required
+                            class="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-purple-500 transition-all">
+                        <input type="color" name="color" value="#6366f1"
+                            class="w-14 h-11 bg-slate-50 border-none rounded-2xl cursor-pointer p-1">
+                    </div>
+                    <button type="submit"
+                        class="w-full py-3 bg-purple-600 text-white rounded-2xl text-sm font-black hover:bg-purple-700 transition-all">
+                        CREATE CATEGORY
+                    </button>
+                </form>
+            </section>
+            <div id="category-list" hx-swap-oob="true" class="grid grid-cols-2 gap-2">
+                {% include "partials/settings_category_list.html" %}
             </div>
         </div>
 
