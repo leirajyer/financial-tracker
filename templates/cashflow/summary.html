@@ -1,0 +1,14 @@
+<div class="divide-y divide-slate-50">
+    {% for item in recent_cashflow %}
+    <div class="px-4 py-3 flex justify-between items-center">
+        <div>
+            <p class="text-xs font-black text-slate-800">{{ item.description }}</p>
+            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{{ item.date.strftime('%b %d') }}
+            </p>
+        </div>
+        <span class="text-xs font-black {{ 'text-emerald-600' if item.type == 'income' else 'text-rose-500' }}">
+            {{ '+' if item.type == 'income' else '-' }}₱{{ "{:,.2f}".format(item.amount) }}
+        </span>
+    </div>
+    {% endfor %}
+</div>

@@ -1,81 +1,130 @@
+from fastapi import FastAPI
 from datetime import datetime
-from app.models import Payee
-from app.models import Card
-from fastapi import APIRouter, Request, Depends
-from sqlalchemy.orm import Session
-from datetime import datetime as dt
-from app.database import get_db
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import HTMLResponse
-from app.services import category as category_service
 
-# Import our new Modular Services
-from app.services import debt, cashflow, horizon as horizon_service
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.models import Card, Payee, CashFlow, Installment
+from app.services import debt, cashflow, category as category_service
 
+
+app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
-
-@router.get("/get-summary")
-async def get_summary(request: Request, db: Session = Depends(get_db)):
-    try:
-        # 1. Get Debt Engine stats (Current Month)
-        # Note: 'debt' refers to the module app.services.debt
-        stats = debt.calculate_monthly_totals(db)
-
-        # 2. Get Income/Expenses (Day 11 Logic)
-        # Using the year/month derived from the debt stats to stay in sync
-        cash = cashflow.get_monthly_cashflow(db, stats["year"], stats["month"])
-
-        # 3. Get the Long-term Projection (12 Months)
-        # We renamed the import to horizon_service to avoid shadowing the variable 'projection'
-        projection = horizon_service.get_12_month_forecast(db)
-        freedom_date = debt.get_freedom_date(db)
-
-        # 4. Final Calculation: Disposable Cash
-        # Cash Balance (Income - Other Exp) minus what's still owed to CCs this month
-        disposable_cash = cash["liquid_cash"] - stats["total_burn"]
-
-        return templates.TemplateResponse(
-            "partials/summary.html",
-            {
-                "request": request,
-                "disposable_cash": round(disposable_cash, 2),
-                "future_forecast": projection,
-                "freedom_month": freedom_date,
-                **stats,  # Unpacks total_burn, percentage_paid, etc.
-                **cash,  # Unpacks total_income, total_other_expenses, liquid_cash
-            },
-        )
-    except Exception as e:
-        print(f"Error in get_summary: {e}")
-        return HTMLResponse(content="Error loading summary", status_code=500)
+# ==========================================
+# 🏠 DASHBOARD ROUTER (/dashboard)
+# ==========================================
+dashboard_router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
-@router.get("/add")
-async def add_page(request: Request, db: Session = Depends(get_db)):
-    # Keep the 'Add' page context aware of the current month's burn
+@dashboard_router.get("")
+async def dashboard_main(request: Request, db: Session = Depends(get_db)):
+    # 1. Fetch Monthly Totals (Burn rate, Income vs Expenses)
     stats = debt.calculate_monthly_totals(db)
 
+    # 2. Get ONLY the last 5 cashflow entries for the mini-list
+    recent_cashflow = db.query(CashFlow).order_by(CashFlow.date.desc()).limit(5).all()
+
+    # 3. Get Active Installments for the current month
+    active_installments = (
+        db.query(Installment).filter(Installment.status == "active").all()
+    )
+
     return templates.TemplateResponse(
-        "add_page.html",
+        "dashboard.html",
         {
             "request": request,
-            "now": dt.now(),
-            "total_burn": stats.get("total_burn", 0),
+            "recent_cashflow": recent_cashflow,
+            "installments": active_installments,
+            "now": datetime.now(),
+            **stats,  # Spreads total_burn, total_income, etc., into context
         },
     )
 
 
-@router.get("/add-form")
-async def get_add_form(request: Request, db: Session = Depends(get_db)):
+# ==========================================
+# 💳 INSTALLMENT ROUTER (/installment)
+# ==========================================
+installment_router = APIRouter(prefix="/installment", tags=["Installments"])
+
+
+@installment_router.get("")
+async def installment_list(request: Request, db: Session = Depends(get_db)):
+    all_installments = (
+        db.query(Installment).order_by(Installment.start_date.desc()).all()
+    )
     return templates.TemplateResponse(
-        "partials/form.html",
+        "installments_list.html", {"request": request, "installments": all_installments}
+    )
+
+
+@installment_router.get("/add")
+async def installment_add_page(request: Request, db: Session = Depends(get_db)):
+    return templates.TemplateResponse(
+        "installment_add.html",
         {
             "request": request,
             "cards": db.query(Card).all(),
             "payees": db.query(Payee).all(),
-            "categories": category_service.get_all_categories(db),
             "now": datetime.now(),
         },
     )
+
+
+@installment_router.delete("/delete/{id}")
+async def delete_installment(id: int, db: Session = Depends(get_db)):
+    item = db.query(Installment).get(id)
+    if item:
+        db.delete(item)
+        db.commit()
+    return HTMLResponse(content="", headers={"HX-Redirect": "/installment"})
+
+
+# ==========================================
+# 💸 CASHFLOW ROUTER (/cashflow)
+# ==========================================
+cashflow_router = APIRouter(prefix="/cashflow", tags=["Cashflow"])
+
+
+@cashflow_router.get("")
+async def cashflow_full_list(request: Request, db: Session = Depends(get_db)):
+    transactions = db.query(CashFlow).order_by(CashFlow.date.desc()).all()
+    return templates.TemplateResponse(
+        "cashflow.html", {"request": request, "transactions": transactions}
+    )
+
+
+@cashflow_router.get("/add")
+async def cashflow_add_page(request: Request, db: Session = Depends(get_db)):
+    categories = category_service.get_all_categories(db)
+    return templates.TemplateResponse(
+        "cashflow_add.html",
+        {"request": request, "categories": categories, "now": datetime.now()},
+    )
+
+
+@cashflow_router.post("/update/{id}")
+async def update_cashflow(
+    id: int,
+    description: str = Form(...),
+    amount: float = Form(...),
+    db: Session = Depends(get_db),
+):
+    item = db.query(CashFlow).get(id)
+    if item:
+        item.description = description
+        item.amount = amount
+        db.commit()
+    return HTMLResponse(content="", headers={"HX-Redirect": "/cashflow"})
+
+
+@cashflow_router.delete("/delete/{id}")
+async def delete_cashflow(id: int, db: Session = Depends(get_db)):
+    item = db.query(CashFlow).get(id)
+    if item:
+        db.delete(item)
+        db.commit()
+    return HTMLResponse(content="")  # HTMX will remove the row from the DOM

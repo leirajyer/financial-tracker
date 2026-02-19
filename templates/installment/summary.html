@@ -1,0 +1,33 @@
+<div class="space-y-3 p-2">
+    {% if installments %}
+    {% for inst in installments %}
+    <div class="p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50">
+        <div class="flex justify-between items-start mb-3">
+            <div>
+                <p class="text-xs font-black text-slate-800 leading-none">{{ inst.payee.name }}</p>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{{ inst.card.name }}</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs font-black text-indigo-600">₱{{ "{:,.2f}".format(inst.monthly_payment) }}</p>
+                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Monthly</p>
+            </div>
+        </div>
+
+        <div class="space-y-1.5">
+            <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500"
+                    style="width: {{ (inst.months_paid / inst.months_total) * 100 }}%"></div>
+            </div>
+            <div class="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest">
+                <span class="text-slate-400">Paid {{ inst.months_paid }}/{{ inst.months_total }}</span>
+                <span class="text-indigo-500">{{ inst.months_total - inst.months_paid }} Months Left</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="py-10 text-center">
+        <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No active installments</p>
+    </div>
+    {% endif %}
+</div>

@@ -197,7 +197,7 @@ def get_global_updates_fragment(
     if toast_msg:
         fragments.append(f"""
             <div id="toast-container" hx-swap-oob="true" _="on load wait 3s then remove me"
-                 class="fixed bottom-5 right-5 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-opacity duration-500 z-50">
+                 class="fixed bottom-5 right-5 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-opacity duration-500 z-50 [&:empty]:hidden">
                 <span class="text-lg">🎉</span>
                 <span class="font-bold text-sm">{toast_msg}</span>
             </div>
@@ -205,7 +205,7 @@ def get_global_updates_fragment(
     else:
         # Use hx-swap-oob to target the container and wipe its inner HTML AND classes
         fragments.append(
-            '<div id="toast-container" hx-swap-oob="true" class="hidden"></div>'
+            '<div id="toast-container" hx-swap-oob="true" class="hidden [&:empty]:hidden"></div>'
         )
 
     return "".join(fragments)

@@ -1,10 +1,15 @@
 import bcrypt
-from .database import SessionLocal
-from .models import User, Card, Payee, Category
-from .services import category as category_service
+from app.database import SessionLocal, engine
+
+# This pulls from app/models/__init__.py which aggregates all modular files
+from app.models import Base, User, Card, Payee, Category
 
 
 def seed_db():
+    # 1. Ensure all tables are created based on the modular models
+    print("🏗️  Synchronizing database schema...")
+    Base.metadata.create_all(bind=engine)
+
     db = SessionLocal()
     print("🌱 Starting database seed...")
 
@@ -14,6 +19,7 @@ def seed_db():
         for acc in accounts:
             exists = db.query(User).filter(User.username == acc["u"]).first()
             if not exists:
+                # Use bcrypt to hash the password
                 salt = bcrypt.gensalt()
                 hashed = bcrypt.hashpw(acc["p"].encode("utf-8"), salt)
                 new_user = User(
@@ -37,8 +43,7 @@ def seed_db():
                 db.add(Card(name=c["name"], color=c["color"]))
             print("✅ Cards seeded with colors.")
 
-        # 4. Seed Basic Categories (Electrical, Water, Subscription)
-        # We manually define these here to ensure the colors match your preference
+        # 4. Seed Categories
         category_list = [
             {"name": "Electrical", "color": "#fbbf24"},  # Amber
             {"name": "Water", "color": "#3b82f6"},  # Blue
