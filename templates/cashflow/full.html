@@ -1,4 +1,96 @@
-<div class="p-6">
-    {% include "cashflow/form.html" %}
-    <hr>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-4 md:p-8">
+    <div class="flex justify-between items-end mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">All Transactions</h1>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Full History</p>
+        </div>
+        <a href="/cashflow/add"
+            class="bg-green-600 text-white px-6 py-3 rounded-2xl font-bold text-sm hover:bg-emerald-600 transition-all shadow-lg shadow-slate-200">
+            + New
+        </a>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <div
+                    class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 text-sm">
+                    💰</div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Income</p>
+            </div>
+            <p class="text-2xl font-black text-emerald-500">₱{{ "{:,.2f}".format(total_income) }}</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500 text-sm">💸
+                </div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Expenses</p>
+            </div>
+            <p class="text-2xl font-black text-rose-500">₱{{ "{:,.2f}".format(total_expense) }}</p>
+        </div>
+
+        <div class="bg-slate-900 p-6 rounded-[2rem] shadow-xl shadow-slate-200">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs">⚖️
+                </div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Net Balance</p>
+            </div>
+            <p class="text-2xl font-black {% if net_balance >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+                ₱{{ "{:,.2f}".format(net_balance) }}
+            </p>
+        </div>
+    </div>
+    <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50/50 border-bottom border-slate-100">
+                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Date</th>
+                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">Description</th>
+                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50">
+                {% for tx in transactions %}
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm font-bold text-slate-500">{{ tx.date.strftime('%b %d, %Y') }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-slate-800 capitalize">{{ tx.description }}</span>
+                            {% if tx.category %}
+                            <div class="mt-1">
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border"
+                                    style="background-color: {{ tx.category.color }}15; 
+                 color: {{ tx.category.color }}; 
+                 border-color: {{ tx.category.color }}30;">
+                                    {{ tx.category.name }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <p
+                            class="text-sm font-black {% if tx.type == 'income' %}text-emerald-500{% else %}text-rose-500{% endif %}">
+                            {{ "+" if tx.type == "income" else "-" }} ₱{{ "{:,.2f}".format(tx.amount) }}
+                            <span class="text-[10px] font-bold uppercase block">{{ tx.type }}</span>
+                        </p>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="px-6 py-12 text-center">
+                        <p class="text-slate-400 font-medium">No transactions found yet.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+{% endblock %}

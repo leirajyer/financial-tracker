@@ -1,5 +1,4 @@
 from app.services.debt import get_global_updates_fragment
-from app.routes.dashboard import templates
 from fastapi import APIRouter, Depends, Form, Request, Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
@@ -18,7 +17,7 @@ async def settings_page(request: Request, db: Session = Depends(get_db)):
     # Fetch categories for the third column
     categories = category_service.get_all_categories(db)
 
-    return templates.TemplateResponse(
+    return HTMLResponse(
         "settings.html",
         {
             "request": request,

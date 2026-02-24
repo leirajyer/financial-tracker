@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto p-4 md:p-8">
+    <div class="flex justify-between items-end mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Credit Pulse</h1>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-indigo-500">Active Installments:
+                {{ active_count }}</p>
+        </div>
+        <a href="/installments/add"
+            class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg hover:bg-slate-900 transition-all">
+            + New Debt
+        </a>
+    </div>
+
+    <div class="bg-slate-900 p-8 rounded-[2.5rem] mb-8 text-white shadow-2xl shadow-indigo-100">
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-50 mb-2">Estimated Total Outstanding</p>
+        <h2 class="text-4xl font-black">₱{{ "{:,.2f}".format(total_remaining) }}</h2>
+    </div>
+
+    <div class="grid gap-4">
+        {% for inst in installments %}
+        {% set prog = inst.get_progress() %}
+        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="font-black text-slate-800">{{ inst.description }}</h3>
+                    <span class="text-[10px] font-bold text-indigo-500 uppercase">{{ inst.card.name }}</span>
+                </div>
+                <div class="text-right">
+                    <p class="font-black text-slate-800">₱{{ "{:,.2f}".format(inst.monthly_payment) }}</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Per Month</p>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
+                    <span>Progress</span>
+                    <span>{{ prog.percent }}%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div class="bg-indigo-500 h-full transition-all duration-1000" style="width: {{ prog.percent }}%">
+                    </div>
+                </div>
+                <div class="flex justify-between text-[10px] font-bold text-slate-500">
+                    <span>Month {{ prog.current }} of {{ prog.total }}</span>
+                    <span>Ends {{ inst.end_date.strftime('%b %Y') }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
