@@ -50,7 +50,16 @@ async def add_installment_form(request: Request, db: Session = Depends(get_db)):
     cards = db.query(Card).order_by(Card.name).all()
     payees = db.query(Payee).order_by(Payee.name).all()
     categories = db.query(Category).all()
-
+    payment_terms = [
+        {"label": "Straight", "value": 1},
+        {"label": "3 Months", "value": 3},
+        {"label": "6 Months", "value": 6},
+        {"label": "12 Months (1 year)", "value": 12},
+        {"label": "24 Months (2 years)", "value": 24},
+        {"label": "36 Months (3 years)", "value": 36},
+        {"label": "48 Months (4 years)", "value": 48},
+        {"label": "60 Months (5 years)", "value": 60},
+    ]
     return templates.TemplateResponse(
         "installments/form.html",
         {
@@ -58,6 +67,7 @@ async def add_installment_form(request: Request, db: Session = Depends(get_db)):
             "cards": cards,
             "payees": payees,
             "categories": categories,
+            "payment_terms": payment_terms,
             "today_month": dt.now().strftime("%Y-%m"),
         },
     )
@@ -89,36 +99,46 @@ async def get_installments_list(request: Request, db: Session = Depends(get_db))
 async def create_installment(
     description: str = Form(..., alias="item_name"),
     total_amount: float = Form(...),
-    total_months: int = Form(..., alias="months_total"),
+    # The interest rate sent from the form (defaulting to 0 for 0% promos)
+    interest_rate: float = Form(0.0, alias="interest_rate"),
+    
+    total_months: int = Form(..., alias="months"),
     card_id: int = Form(...),
     payee_id: int = Form(...),
-    start_period: str = Form(..., alias="start_date"),
+    category_id: int = Form(...),
+    start_period: str = Form(..., alias="start_date_str"),
     db: Session = Depends(get_db),
 ):
-    # 1. Logic: Parse date and calculate fields
+    # 1. Parse date
     start_date = dt.strptime(start_period, "%Y-%m").date()
-    monthly_payment = total_amount / total_months
-    # End date is total_months - 1 from start because start month counts as Month 1
+
+    # 2. Logic: Monthly Add-on Interest Calculation
+    # Formula: Total Interest = Principal * (Monthly Rate / 100) * Number of Months
+    total_interest_amt = total_amount * (interest_rate / 100) * total_months
+    monthly_payment = (total_amount + total_interest_amt) / total_months
+
+    # End date calculation (Inclusive of start month)
     end_date = start_date + relativedelta(months=total_months - 1)
 
-    # 2. Database Save
+    # 3. Database Save
     new_item = Installment(
         description=description,
         total_amount=total_amount,
+        interest_rate=interest_rate, 
         monthly_payment=monthly_payment,
-        months_total=total_months,
+        payment_terms=total_months,
         start_date=start_date,
         end_date=end_date,
         card_id=card_id,
         payee_id=payee_id,
+        category_id=category_id,
         status="active",
     )
+
     db.add(new_item)
     db.commit()
 
-    # 3. Redirect to dashboard (if standard form) or return HTMX fragment
-    # Given your current setup, a redirect is safer for a full-page form
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/installments/", status_code=303)
 
 
 @router.delete("/{rec_id}", response_class=HTMLResponse)

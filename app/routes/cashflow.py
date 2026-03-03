@@ -15,15 +15,12 @@ templates = Jinja2Templates(directory="templates")
 
 @router.get("/")
 async def show_all_cashflow(request: Request, db: Session = Depends(get_db)):
-    # 1. Fetch all transactions (newest first)
     transactions = db.query(CashFlow).order_by(CashFlow.date.desc()).all()
+    # You MUST fetch categories here for the edit modal to work
+    categories = db.query(Category).all()
 
-    # 2. Calculate Totals
-    # We filter by type to get the sum of income and expenses separately
     total_income = sum(t.amount for t in transactions if t.type == "income")
     total_expense = sum(t.amount for t in transactions if t.type == "expense")
-
-    # 3. Calculate the Net Balance
     net_balance = total_income - total_expense
 
     return templates.TemplateResponse(
@@ -31,6 +28,7 @@ async def show_all_cashflow(request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "transactions": transactions,
+            "categories": categories,  # Pass it to the template
             "total_income": total_income,
             "total_expense": total_expense,
             "net_balance": net_balance,
@@ -75,3 +73,41 @@ async def create_cashflow(
 
     # Redirect to homepage (index) to see the updated "Recent Activity"
     return RedirectResponse(url="/", status_code=303)
+
+
+@router.post("/edit/{transaction_id}")
+async def update_transaction(
+    transaction_id: int,
+    description: str = Form(...),
+    amount: float = Form(...),
+    category_id: int = Form(...),
+    transaction_type: str = Form(..., alias="transaction_type"),
+    db: Session = Depends(get_db),
+):
+    # Change 'Transaction' to 'CashFlow'
+    tx = db.query(CashFlow).filter(CashFlow.id == transaction_id).first()
+
+    if not tx:
+        return RedirectResponse(url="/cashflow/?error=not_found", status_code=303)
+
+    tx.description = description
+    tx.amount = abs(amount)
+    tx.category_id = category_id
+    tx.type = transaction_type
+
+    db.commit()
+    return RedirectResponse(url="/cashflow/", status_code=303)
+
+
+@router.post("/delete/{transaction_id}")
+async def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
+    # Query using the correct model name 'CashFlow'
+    tx = db.query(CashFlow).filter(CashFlow.id == transaction_id).first()
+
+    if not tx:
+        return RedirectResponse(url="/cashflow/?error=not_found", status_code=303)
+
+    db.delete(tx)
+    db.commit()
+
+    return RedirectResponse(url="/cashflow/", status_code=303)
