@@ -1,54 +1,206 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="max-w-4xl mx-auto p-4 md:p-8">
-    <div class="flex justify-between items-end mb-8">
+    <div class="flex justify-between items-center mb-10">
         <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Credit Pulse</h1>
-            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-indigo-500">Active Installments:
-                {{ active_count }}</p>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Credit Pulse</h1>
+            <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.2em] mt-1">
+                {{ active_count }} Active Installments
+            </p>
         </div>
         <a href="/installments/add"
-            class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-lg hover:bg-slate-900 transition-all">
+            class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-slate-900 transition-all shadow-xl shadow-indigo-100">
             + New Debt
         </a>
     </div>
 
-    <div class="bg-slate-900 p-8 rounded-[2.5rem] mb-8 text-white shadow-2xl shadow-indigo-100">
-        <p class="text-[10px] font-black uppercase tracking-[0.2em] opacity-50 mb-2">Estimated Total Outstanding</p>
-        <h2 class="text-4xl font-black">₱{{ "{:,.2f}".format(total_remaining) }}</h2>
+    <div class="bg-slate-900 p-10 rounded-[3rem] mb-10 border border-slate-900 shadow-2xl shadow-emerald-50">
+        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-300 mb-3 opacity-80">Total Outstanding
+        </p>
+        <h2 class="text-5xl font-black text-white tracking-tighter">
+            ₱{{ "{:,.2f}".format(total_remaining) }}
+        </h2>
     </div>
 
-    <div class="grid gap-4">
+    <div class="space-y-2">
         {% for inst in installments %}
         {% set prog = inst.get_progress() %}
-        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <h3 class="font-black text-slate-800">{{ inst.description }}</h3>
-                    <span class="text-[10px] font-bold text-indigo-500 uppercase">{{ inst.card.name }}</span>
+        <div
+            class="group bg-white p-5 md:px-8 rounded-[2rem] hover:bg-slate-50 transition-all duration-300 relative overflow-hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="w-full md:w-1/4">
+                    <h3 class="font-black text-slate-800 text-sm tracking-tight">{{ inst.description }}</h3>
+                    <span class="text-[9px] font-black text-indigo-500 uppercase bg-indigo-50 px-2 py-0.5 rounded-md">{{
+                        inst.card.name }}</span>
                 </div>
-                <div class="text-right">
-                    <p class="font-black text-slate-800">₱{{ "{:,.2f}".format(inst.monthly_payment) }}</p>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase">Per Month</p>
-                </div>
-            </div>
 
-            <div class="space-y-2">
-                <div class="flex justify-between text-[10px] font-black uppercase text-slate-400">
-                    <span>Progress</span>
-                    <span>{{ prog.percent }}%</span>
+                <div class="hidden md:block text-center px-4 border-l border-slate-100">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Duration</p>
+                    <p class="text-xs font-bold text-slate-800">{{ prog.current }} <span
+                            class="text-emerald-500">/</span> {{ inst.payment_terms }}</p>
                 </div>
-                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                    <div class="bg-indigo-500 h-full transition-all duration-1000" style="width: {{ prog.percent }}%">
+
+                <div class="hidden md:block text-center px-4 border-l border-slate-100">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Completion</p>
+                    <p class="text-xs font-bold text-sky-600 uppercase">{{ inst.end_date.strftime('%b %Y') }}</p>
+                </div>
+
+                <div class="flex items-center justify-end gap-6 md:w-1/3">
+                    <div class="text-right">
+                        <p class="text-lg font-black text-slate-900 tracking-tighter leading-none">₱{{
+                            "{:,.2f}".format(inst.monthly_payment) }}</p>
+                        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Monthly</p>
                     </div>
-                </div>
-                <div class="flex justify-between text-[10px] font-bold text-slate-500">
-                    <span>Month {{ prog.current }} of {{ prog.total }}</span>
-                    <span>Ends {{ inst.end_date.strftime('%b %Y') }}</span>
+                    <button
+                        onclick="openEditInstModal('{{ inst.id }}', '{{ inst.description }}', '{{ inst.card_id }}', '{{ inst.category_id }}', '{{ inst.payee_id }}', '{{ inst.total_amount }}', '{{ inst.payment_terms }}', '{{ inst.interest_rate }}', '{{ inst.start_date.strftime('%Y-%m') }}')"
+                        class="p-2 text-slate-200 hover:text-emerald-600 transition-colors">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
 </div>
+<div id="editInstModal"
+    class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-[2.5rem] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-black text-slate-800 tracking-tight">Modify Installment</h2>
+            <button onclick="closeInstModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+        </div>
+
+        <form id="editInstForm" method="POST" class="space-y-6">
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Item Name</label>
+                <input type="text" name="item_name" id="inst_desc" required
+                    class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Card</label>
+                    <select name="card_id" id="inst_card"
+                        class="w-full p-4 bg-slate-50 border-none rounded-2xl font-black">
+                        {% for card in cards %}<option value="{{ card.id }}">{{ card.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Category</label>
+                    <select name="category_id" id="inst_cat"
+                        class="w-full p-4 bg-slate-50 border-none rounded-2xl font-black">
+                        {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Payee</label>
+                    <select name="payee_id" id="inst_payee"
+                        class="w-full p-4 bg-slate-50 border-none rounded-2xl font-black">
+                        {% for p in payees %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-50 pt-4">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Principal Amount</label>
+                    <input type="number" step="0.01" name="total_amount" id="inst_amt" required
+                        class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Terms (Months)</label>
+                    <select name="months" id="inst_months" required
+                        class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-indigo-500">
+                        <option value="1">Straight Payment</option>
+                        <option value="3">3 Months</option>
+                        <option value="6">6 Months</option>
+                        <option value="12">12 Months</option>
+                        <option value="18">18 Months</option>
+                        <option value="24">24 Months</option>
+                        <option value="36">36 Months</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-rose-400 uppercase mb-2">Flat Interest (₱)</label>
+                    <input type="number" step="0.01" name="interest_rate" id="inst_interest" required
+                        class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-rose-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Start Month</label>
+                <input type="month" name="start_date_str" id="inst_date" required
+                    class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold">
+            </div>
+
+            <div class="flex flex-col gap-3 pt-4">
+                <button type="submit"
+                    class="w-full bg-slate-900 text-white p-5 rounded-3xl font-black text-sm uppercase shadow-xl hover:bg-indigo-600 transition-all">Update
+                    Details</button>
+                <div class="flex gap-3">
+                    <button type="button" onclick="confirmDeleteInstallment()"
+                        class="flex-1 bg-rose-50 text-rose-500 p-4 rounded-2xl font-black text-xs uppercase hover:bg-rose-100">Delete</button>
+                    <button type="button" onclick="closeInstModal()"
+                        class="flex-1 bg-slate-100 text-slate-400 p-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200">Cancel</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form id="deleteInstForm" method="POST" class="hidden"></form>
+
+<script>
+    let currentInstId = null;
+
+
+    function openEditInstModal(id, desc, cardId, catId, payeeId, amt, months, interest, startDate) {
+        // Critical: Assign the incoming ID to the global variable
+        currentInstId = id;
+
+        const form = document.getElementById('editInstForm');
+        if (!form) return;
+
+        // Set the route for updating
+        form.action = '/installments/edit/' + id;
+
+        // Populate the UI fields
+        document.getElementById('inst_desc').value = desc;
+        document.getElementById('inst_amt').value = amt;
+        document.getElementById('inst_months').value = months;
+        document.getElementById('inst_interest').value = interest;
+        document.getElementById('inst_date').value = startDate;
+        document.getElementById('inst_card').value = cardId;
+        document.getElementById('inst_cat').value = catId;
+        document.getElementById('inst_payee').value = payeeId;
+
+        // Toggle Modal
+        const modal = document.getElementById('editInstModal');
+        modal.classList.replace('hidden', 'flex');
+    }
+
+    function confirmDeleteInstallment() {
+        // This now successfully reads the currentInstId set above
+        if (!currentInstId || currentInstId === 'null') {
+            console.error("No ID available for deletion.");
+            return;
+        }
+
+        if (confirm("Permanently delete this installment?")) {
+            const dForm = document.getElementById('deleteInstForm');
+            dForm.action = '/installments/delete/' + currentInstId;
+            dForm.submit();
+        }
+    }
+
+    function closeInstModal() {
+        const modal = document.getElementById('editInstModal');
+        modal.classList.replace('flex', 'hidden');
+        currentInstId = null;
+    }
+
+</script>
 {% endblock %}

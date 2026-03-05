@@ -33,6 +33,10 @@ async def list_all_installments(request: Request, db: Session = Depends(get_db))
     )
     active_count = len([i for i in installments if i.status == "active"])
 
+    cards = db.query(Card).order_by(Card.name).all()
+    payees = db.query(Payee).order_by(Payee.name).all()
+    categories = db.query(Category).all()
+
     return templates.TemplateResponse(
         "installments/full.html",
         {
@@ -40,6 +44,9 @@ async def list_all_installments(request: Request, db: Session = Depends(get_db))
             "installments": installments,
             "total_remaining": total_remaining,
             "active_count": active_count,
+            "cards": cards,
+            "categories": categories,
+            "payees": payees,
         },
     )
 
@@ -101,7 +108,6 @@ async def create_installment(
     total_amount: float = Form(...),
     # The interest rate sent from the form (defaulting to 0 for 0% promos)
     interest_rate: float = Form(0.0, alias="interest_rate"),
-    
     total_months: int = Form(..., alias="months"),
     card_id: int = Form(...),
     payee_id: int = Form(...),
@@ -124,7 +130,7 @@ async def create_installment(
     new_item = Installment(
         description=description,
         total_amount=total_amount,
-        interest_rate=interest_rate, 
+        interest_rate=interest_rate,
         monthly_payment=monthly_payment,
         payment_terms=total_months,
         start_date=start_date,
@@ -168,3 +174,61 @@ async def get_card_options(db: Session = Depends(get_db)):
     return HTMLResponse(
         "".join([f'<option value="{c.id}">{c.name}</option>' for c in cards])
     )
+
+
+from fastapi import APIRouter, Depends, Form, Request
+from sqlalchemy.orm import Session
+from fastapi.responses import RedirectResponse
+from datetime import datetime as dt
+from app.models.installment import Installment
+
+
+@router.post("/edit/{installment_id}")
+async def update_installment(
+    installment_id: int,
+    description: str = Form(..., alias="item_name"),
+    card_id: int = Form(...),
+    category_id: int = Form(...),
+    payee_id: int = Form(...),
+    total_amount: float = Form(...),
+    months: int = Form(...),
+    interest_rate: float = Form(0.0),  # Flat interest amount
+    start_date_str: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    inst = db.query(Installment).filter(Installment.id == installment_id).first()
+
+    if not inst:
+        return RedirectResponse(url="/installments/?error=not_found", status_code=303)
+
+    # 1. Update Info
+    inst.description = description
+    inst.card_id = card_id
+    inst.category_id = category_id
+    inst.payee_id = payee_id
+    inst.total_amount = total_amount
+    inst.payment_terms = months
+    inst.interest_rate = interest_rate
+
+    # 2. Recalculate Monthly Payment (Principal + Flat Interest) / Months
+    inst.monthly_payment = (total_amount + interest_rate) / months
+
+    # 3. Update Date (Expects YYYY-MM)
+    inst.start_date = dt.strptime(start_date_str, "%Y-%m").date()
+
+    db.commit()
+    return RedirectResponse(url="/installments/", status_code=303)
+
+
+@router.post("/delete/{installment_id}")
+async def delete_installment(installment_id: int, db: Session = Depends(get_db)):
+    # Fetch the installment record
+    inst = db.query(Installment).filter(Installment.id == installment_id).first()
+
+    if not inst:
+        return RedirectResponse(url="/installments/?error=not_found", status_code=303)
+
+    db.delete(inst)
+    db.commit()
+
+    return RedirectResponse(url="/installments/", status_code=303)

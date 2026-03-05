@@ -24,7 +24,6 @@ class Installment(Base):
     payment_terms = Column(Integer, default=1)  # Total months (e.g., 12)
 
     start_date = Column(Date)
-    end_date = Column(Date)
     status = Column(String, default="active")
 
     # Foreign Keys
@@ -41,6 +40,23 @@ class Installment(Base):
     def total_to_pay(self):
         """Principal + Total Interest."""
         return (self.total_amount or 0.0) + (self.interest_rate or 0.0)
+
+    @property
+    def end_date(self):
+        """
+        Calculates the completion date.
+        For Straight Payment (terms=1): Returns start_date + 1 month.
+        For Installments (terms > 1): Returns start_date + (terms - 1) months.
+        """
+        if not self.start_date or not self.payment_terms:
+            return None
+
+        if self.payment_terms == 1:
+            # Straight payment is due the very next month
+            return self.start_date + relativedelta(months=1)
+
+        # Standard installment logic
+        return self.start_date + relativedelta(months=self.payment_terms - 1)
 
     @property
     def total_months_count(self):
