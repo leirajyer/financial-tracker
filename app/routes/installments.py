@@ -134,7 +134,6 @@ async def create_installment(
         monthly_payment=monthly_payment,
         payment_terms=total_months,
         start_date=start_date,
-        end_date=end_date,
         card_id=card_id,
         payee_id=payee_id,
         category_id=category_id,

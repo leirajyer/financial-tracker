@@ -52,18 +52,23 @@ async def add_cashflow_form(request: Request, db: Session = Depends(get_db)):
 async def create_cashflow(
     description: str = Form(...),
     amount: float = Form(...),
-    type: str = Form(...),  # 'income' or 'expense'
+    transaction_type: str = Form(..., alias="type"),  # Use alias to match HTML 'type'
     category_id: int = Form(None),
-    date_str: str = Form(alias="date"),  # Matches name="date" in HTML
+    date_str: str = Form(None, alias="date"),
     db: Session = Depends(get_db),
 ):
-    # Convert string date from form to Python date object
-    entry_date = date.fromisoformat(date_str) if date_str else date.today()
+    # 1. Parse the date safely
+    try:
+        entry_date = date.fromisoformat(date_str) if date_str else date.today()
+    except ValueError:
+        entry_date = date.today()
 
+    # 2. Create the entry
+    # Match your model columns: description, amount, type, category_id, date
     new_entry = CashFlow(
         description=description,
         amount=amount,
-        type=type,
+        type=transaction_type,  # Fixed: using the variable from arguments
         category_id=category_id if category_id else None,
         date=entry_date,
     )
@@ -71,7 +76,6 @@ async def create_cashflow(
     db.add(new_entry)
     db.commit()
 
-    # Redirect to homepage (index) to see the updated "Recent Activity"
     return RedirectResponse(url="/", status_code=303)
 
 

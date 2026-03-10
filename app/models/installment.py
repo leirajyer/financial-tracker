@@ -1,40 +1,36 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import date
-from dateutil.relativedelta import relativedelta
-from .base import Base
-
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import date
+from datetime import date, datetime as dt
 from dateutil.relativedelta import relativedelta
 from .base import Base
 
 
 class Installment(Base):
     __tablename__ = "installments"
+    __table_args__ = {"extend_existing": True}
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     description = Column(String)
-
-    # Financials
-    total_amount = Column(Float)  # The Principal (e.g., 50,000)
-    interest_rate = Column(Float, default=0.0)
-    monthly_payment = Column(Float)  # (Principal + Total Interest) / Terms
-    payment_terms = Column(Integer, default=1)  # Total months (e.g., 12)
-
+    total_amount = Column(Float)
+    interest_rate = Column(Float)
+    monthly_payment = Column(Float)
+    payment_terms = Column(Integer)
     start_date = Column(Date)
     status = Column(String, default="active")
+    created_at = Column(DateTime, default=dt.now)
+    updated_at = Column(DateTime, default=dt.now, onupdate=dt.now)
 
     # Foreign Keys
     card_id = Column(Integer, ForeignKey("cards.id"))
     payee_id = Column(Integer, ForeignKey("payees.id"))
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
 
-    # Relationships
-    category = relationship("Category", back_populates="installments")
-    card = relationship("Card", back_populates="installments")
-    payee = relationship("Payee", back_populates="installments")
+    # FIXED RELATIONSHIPS: Use strings here
+    category = relationship(
+        "app.models.category.Category", back_populates="installments"
+    )
+    card = relationship("app.models.card.Card", back_populates="installments")
+    payee = relationship("app.models.payee.Payee", back_populates="installments")
 
     @property
     def total_to_pay(self):
@@ -43,11 +39,6 @@ class Installment(Base):
 
     @property
     def end_date(self):
-        """
-        Calculates the completion date.
-        For Straight Payment (terms=1): Returns start_date + 1 month.
-        For Installments (terms > 1): Returns start_date + (terms - 1) months.
-        """
         if not self.start_date or not self.payment_terms:
             return None
 

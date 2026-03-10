@@ -1,20 +1,20 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, String, Float, Date
 from sqlalchemy.orm import relationship
 from datetime import date
 from .base import Base
 
 
 class CashFlow(Base):
-    __tablename__ = "cashflows"
-    id = Column(Integer, primary_key=True, index=True)
-    description = Column(String, nullable=False)
+    __tablename__ = "cash_flows"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(Integer, primary_key=True)
+    description = Column(String)
     amount = Column(Float, nullable=False)
+    # ADD THIS: "type" (Income or Expense)
+    type = Column(String)
+    # ADD THIS: "date"
     date = Column(Date, default=date.today)
 
-    # Values should be 'income' or 'expense'
-    type = Column(String, nullable=False)
-
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-
-    # Relationship points to the Category model by string name
-    category = relationship("Category", back_populates="cash_flows")
+    category_id = Column(Integer, ForeignKey("categories.id"))
+    category = relationship("app.models.category.Category", back_populates="cash_flows")

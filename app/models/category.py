@@ -5,11 +5,14 @@ from .base import Base
 
 class Category(Base):
     __tablename__ = "categories"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, nullable=False)
-    color = Column(String, default="#94a3b8")
+    __table_args__ = {"extend_existing": True}
 
-    # Use strings ONLY. SQLAlchemy will find them in the global registry
-    # as long as they all share the same Base.
-    installments = relationship("Installment", back_populates="category")
-    cash_flows = relationship("CashFlow", back_populates="category")
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+    color = Column(String, default="#10b981")  # Added for your color feature
+
+    # Use strings here so SQLAlchemy waits for all files to load
+    installments = relationship(
+        "app.models.installment.Installment", back_populates="category"
+    )
+    cash_flows = relationship("app.models.cashflow.CashFlow", back_populates="category")

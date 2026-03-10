@@ -1,3 +1,4 @@
+# app/models/payee.py
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 from .base import Base
@@ -5,8 +6,12 @@ from .base import Base
 
 class Payee(Base):
     __tablename__ = "payees"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
+    __table_args__ = {"extend_existing": True}
 
-    # Relationship points to the Installment model by string name
-    installments = relationship("Installment", back_populates="payee")
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+
+    # Update this to use the full module path
+    installments = relationship(
+        "app.models.installment.Installment", back_populates="payee"
+    )

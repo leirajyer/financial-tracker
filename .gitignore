@@ -5,11 +5,17 @@ __pycache__/
 .venv/
 venv/
 
-# Database
+# Database (Keep your old SQLite ignores just in case)
 installments.db
+financial.db
+# ADD THIS: Postgres data folder
+pgdata/
 
 # Environment/Secrets
 .env
 
 # Mac system files
 .DS_Store
+
+# Docker
+.docker/
