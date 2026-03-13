@@ -30,29 +30,31 @@
         </div>
       </div>
 
-      <div class="flex items-center w-full md:w-auto overflow-x-auto pb-1 md:pb-0 gap-6">
-        <a href="/cashflow" class="whitespace-nowrap font-medium hover:text-emerald-300 transition-colors">Cashflow</a>
-        <a href="/installments" class="whitespace-nowrap font-medium hover:text-indigo-300 transition-colors">Installments</a>
+      <div class="flex items-center w-full md:w-auto overflow-x-auto pb-1 md:pb-0 gap-4 sm:gap-6 no-scrollbar">
+        <a href="/cashflow" class="whitespace-nowrap text-xs sm:text-sm font-bold hover:text-emerald-300 transition-colors px-2 py-1 rounded-lg hover:bg-white/10 uppercase tracking-widest">Cashflow</a>
+        <a href="/installments" class="whitespace-nowrap text-xs sm:text-sm font-bold hover:text-indigo-300 transition-colors px-2 py-1 rounded-lg hover:bg-white/10 uppercase tracking-widest">Installments</a>
         <a href="/settings/" class="hidden md:block p-2 text-slate-400 hover:text-white transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </a>
       </div>
 
-      <div class="hidden lg:flex items-center gap-6">
-        <div class="flex items-center gap-3 shrink-0">
-          <div class="flex flex-col items-end pr-4 border-r border-indigo-800 mr-2">
-            <span class="text-[9px] text-indigo-300 uppercase font-bold">Month Total</span>
-            <span id="nav-monthly-total" class="text-sm font-mono font-bold text-indigo-200">
+      <div class="flex items-center gap-3 sm:gap-6 shrink-0 order-first md:order-last">
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div class="flex flex-col items-end pr-3 sm:pr-4 border-r border-indigo-800">
+            <span class="text-[8px] sm:text-[9px] text-indigo-300 uppercase font-black tracking-widest">Month Total</span>
+            <span id="nav-monthly-total" class="text-xs sm:text-sm font-mono font-bold text-indigo-200">
                 {% if total_due %}₱{{ "{:,.2f}".format(total_due) }}{% else %}₱0.00{% endif %}
             </span>
           </div>
-          <div class="flex flex-col items-end">
-            <span class="text-[9px] text-indigo-300 uppercase font-bold">Logged in</span>
-            <span class="text-xs font-bold">{% if current_user %}{{ current_user.username }}{% else %}Guest{% endif %}</span>
+          
+          <div class="hidden sm:flex flex-col items-end">
+            <span class="text-[9px] text-indigo-300 uppercase font-black tracking-widest leading-none">Logged in</span>
+            <span class="text-xs font-bold leading-tight">{% if current_user %}{{ current_user.username }}{% else %}Guest{% endif %}</span>
           </div>
+
           {% if current_user %}
           <a href="/logout"
             class="bg-rose-500 hover:bg-rose-600 text-white p-2 rounded-lg transition-all shadow-lg shadow-rose-900/20 group"
@@ -64,7 +66,7 @@
           </a>
           {% else %}
           <a href="/login"
-            class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-900/20"
+            class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-black uppercase transition-all shadow-lg shadow-emerald-900/20"
             title="Login">
             Login
           </a>
