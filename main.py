@@ -29,7 +29,7 @@ from app.core.auth import get_current_user, SECRET_KEY
 from app.core.ui import templates
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-app = FastAPI(title="PesoPulse Financial Tracker")
+app = FastAPI(title="Salapi")
 
 # Handle proxy headers for HTTPS redirection (critical for Railway/Render)
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
