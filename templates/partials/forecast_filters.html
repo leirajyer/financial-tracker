@@ -6,7 +6,7 @@
                 }}</h3>
             <span class="text-[10px] uppercase font-bold text-indigo-600">Remaining Balance:</span>
             <span id="nav-remaining-value"
-                class="text-sm font-bold text-red-600 bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm bg-red-100">
+                class="text-sm font-bold text-red-600 bg-white border border-slate-200 px-3 py-1 rounded-xl shadow-sm bg-red-100">
                 ₱{{ "{:,.2f}".format(total_due) if total_due else "0.00" }}
             </span>
         </div>
@@ -21,14 +21,14 @@
                     <input type="month" name="forecast_period" value="{{ now.strftime('%Y-%m') }}"
                         hx-get="/get-forecast" hx-target="#forecast-container" hx-trigger="change, load"
                         hx-include="#forecast-filters input, #forecast-filters select"
-                        class="border border-slate-200 p-2 rounded-lg text-xs font-bold text-slate-700">
+                        class="border border-slate-200 p-2 rounded-xl text-xs font-bold text-slate-700">
                 </div>
 
                 <div class="col-span-1 lg:col-span-4">
                     <label class="text-[10px] font-bold text-slate-400 uppercase">Card</label>
                     <select name="card_id" hx-get="/get-forecast" hx-target="#forecast-container"
                         hx-include="#forecast-filters input, #forecast-filters select"
-                        class="border border-slate-200 p-2 rounded-lg text-xs font-bold text-slate-700">
+                        class="border border-slate-200 p-2 rounded-xl text-xs font-bold text-slate-700">
                         <option value="">All Cards</option>
                         {% for card in cards %}
                         <option value="{{ card.id }}">{{ card.name }}</option>
@@ -40,7 +40,7 @@
                     <label class="text-[10px] font-bold text-slate-400 uppercase">Payee</label>
                     <select name="payee_id" hx-get="/get-forecast" hx-target="#forecast-container"
                         hx-include="#forecast-filters input, #forecast-filters select"
-                        class="border border-slate-200 p-2 rounded-lg text-xs font-bold text-slate-700">
+                        class="border border-slate-200 p-2 rounded-xl text-xs font-bold text-slate-700">
                         <option value="">All Payees</option>
                         {% for payee in payees %}
                         <option value="{{ payee.id }}">{{ payee.name }}</option>

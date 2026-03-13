@@ -7,12 +7,12 @@
     </div>
 
     <form action="/installments/add" method="POST" class="space-y-6">
-        <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+        <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-6">
 
             <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Item Description</label>
                 <input type="text" name="item_name" placeholder="e.g., MacBook M3 Pro" required
-                    class="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold focus:ring-2 focus:ring-indigo-500">
+                    class="w-full p-4 bg-slate-50 border-none rounded-xl font-bold focus:ring-2 focus:ring-indigo-500">
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -22,7 +22,7 @@
                         Card</label>
                     <div class="relative group">
                         <select name="card_id" required
-                            class="w-full appearance-none bg-slate-50 border-none rounded-2xl p-4 pr-12 font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
+                            class="w-full appearance-none bg-slate-50 border-none rounded-xl p-4 pr-12 font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
                             <option value="" disabled selected>Select Card</option>
                             {% for card in cards %}
                             <option value="{{ card.id }}">{{ card.name }}</option>
@@ -43,7 +43,7 @@
                         class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Category</label>
                     <div class="relative group">
                         <select name="category_id" required
-                            class="w-full appearance-none bg-slate-50 border-none rounded-2xl p-4 pr-12 font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
+                            class="w-full appearance-none bg-slate-50 border-none rounded-xl p-4 pr-12 font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
                             <option value="" disabled selected>Select Category</option>
                             {% for cat in categories %}
                             <option value="{{ cat.id }}">{{ cat.name }}</option>
@@ -63,7 +63,7 @@
                     <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Payee</label>
                     <div class="relative group">
                         <select name="payee_id" required
-                            class="w-full appearance-none bg-slate-50 border-none rounded-2xl p-4 pr-12 font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
+                            class="w-full appearance-none bg-slate-50 border-none rounded-xl p-4 pr-12 font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
                             <option value="" disabled selected>Select Payee</option>
                             {% for p in payees %}
                             <option value="{{ p.id }}">{{ p.name }}</option>
@@ -92,7 +92,7 @@
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₱</span>
                             <input type="number" step="0.01" name="total_amount" required placeholder="0.00"
-                                class="w-full pl-8 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-xl font-black focus:ring-2 focus:ring-indigo-500 transition-all">
+                                class="w-full pl-8 pr-4 py-4 bg-slate-50 border-none rounded-xl text-xl font-black focus:ring-2 focus:ring-indigo-500 transition-all">
                         </div>
                     </div>
 
@@ -103,7 +103,7 @@
                                 Terms</label>
                             <div class="relative group">
                                 <select name="months" required
-                                    class="w-full appearance-none bg-slate-50 border-none rounded-2xl p-4 pr-12 font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
+                                    class="w-full appearance-none bg-slate-50 border-none rounded-xl p-4 pr-12 font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
                                     {% for term in payment_terms %}
                                     <option value="{{ term.value }}" {% if term.value==12 %}selected{% endif %}>
                                         {{ term.label }}
@@ -124,7 +124,7 @@
                             <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Start
                                 Month</label>
                             <input type="month" name="start_date_str" value="{{ today_month }}" required
-                                class="w-full p-4 bg-slate-50 border-none rounded-2xl font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all">
+                                class="w-full p-4 bg-slate-50 border-none rounded-xl font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all">
                         </div>
 
                         <div class="space-y-2">
@@ -133,7 +133,7 @@
                                 Rate</label>
                             <div class="relative group">
                                 <input type="number" step="0.01" min="0" name="interest_rate" value="0.00"
-                                    class="w-full p-4 bg-slate-50 border-none rounded-2xl font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 transition-all">
+                                    class="w-full p-4 bg-slate-50 border-none rounded-xl font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 transition-all">
                                 <span
                                     class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold pointer-events-none">%</span>
                             </div>
@@ -145,11 +145,11 @@
 
         <div class="flex flex-col md:flex-row gap-3">
             <button type="submit"
-                class="flex-1 bg-slate-900 text-white p-5 rounded-3xl font-black text-sm uppercase shadow-xl hover:bg-indigo-600 transition-all">
+                class="flex-1 bg-slate-900 text-white p-5 rounded-xl font-black text-sm uppercase shadow-xl hover:bg-indigo-600 transition-all">
                 Save Installment
             </button>
             <a href="/installments/"
-                class="flex-1 bg-red-500 text-white p-5 rounded-3xl font-black text-sm text-center uppercase transition-colors">Cancel</a>
+                class="flex-1 bg-red-500 text-white p-5 rounded-xl font-black text-sm text-center uppercase transition-colors">Cancel</a>
         </div>
     </form>
 </div>

@@ -16,50 +16,50 @@
     <div class="flex flex-col md:flex-row gap-8">
         <!-- Sidebar -->
         <aside class="w-full md:w-64 shrink-0 space-y-2">
-            <button onclick="showSection('cards')" id="tab-cards" class="w-full text-left px-5 py-4 bg-blue-50 text-blue-700 font-bold rounded-2xl transition-all tab-btn border border-blue-100 shadow-sm">
+            <button onclick="showSection('cards')" id="tab-cards" class="w-full text-left px-5 py-4 bg-blue-50 text-blue-700 font-bold rounded-xl transition-all tab-btn border border-blue-100 shadow-sm">
                 <span class="mr-3 text-lg">💳</span> Credit Cards
             </button>
-            <button onclick="showSection('payees')" id="tab-payees" class="w-full text-left px-5 py-4 bg-white text-slate-600 hover:bg-slate-50 font-bold rounded-2xl transition-all tab-btn border border-transparent">
+            <button onclick="showSection('payees')" id="tab-payees" class="w-full text-left px-5 py-4 bg-white text-slate-600 hover:bg-slate-50 font-bold rounded-xl transition-all tab-btn border border-transparent">
                 <span class="mr-3 text-lg">🏢</span> Global Payees
             </button>
-            <button onclick="showSection('categories')" id="tab-categories" class="w-full text-left px-5 py-4 bg-white text-slate-600 hover:bg-slate-50 font-bold rounded-2xl transition-all tab-btn border border-transparent">
+            <button onclick="showSection('categories')" id="tab-categories" class="w-full text-left px-5 py-4 bg-white text-slate-600 hover:bg-slate-50 font-bold rounded-xl transition-all tab-btn border border-transparent">
                 <span class="mr-3 text-lg">🏷️</span> Categories
             </button>
         </aside>
 
         <!-- Main Content area -->
-        <div class="flex-1 bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm border border-slate-100 min-h-[500px]">
+        <div class="flex-1 bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-100 min-h-[500px]">
             <!-- Cards Section -->
             <div id="section-cards" class="settings-section space-y-8 animate-fade-in">
                 <header>
                     <h3 class="font-black text-slate-800 text-2xl flex items-center gap-3">
-                        <span class="p-3 bg-blue-50 rounded-2xl text-xl">💳</span>
+                        <span class="p-3 bg-blue-50 rounded-xl text-xl">💳</span>
                         Credit Cards
                     </h3>
                     <p class="text-xs text-slate-400 font-bold mt-2">Manage your credit cards, due dates, and limits.</p>
                 </header>
 
                 <form hx-post="/settings/add-card" hx-swap="none" hx-on::after-request="if(event.detail.successful) this.reset()"
-                    class="flex flex-col gap-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                    class="flex flex-col gap-4 bg-slate-50/50 p-6 rounded-xl border border-slate-100">
                     <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Add New Card</h4>
                     
                     <div class="flex flex-col md:flex-row gap-4">
                         <input type="text" name="name" placeholder="e.g. BPI Blue Visa" required
-                            class="flex-1 px-4 py-3 bg-white border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700 shadow-sm">
+                            class="flex-1 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700 shadow-sm">
                         
                         <input type="color" name="color" value="#6366f1"
-                            class="w-full md:w-16 h-12 bg-white border border-slate-100 rounded-2xl cursor-pointer p-1 transition-all hover:bg-slate-50 shadow-sm shrink-0">
+                            class="w-full md:w-16 h-12 bg-white border border-slate-100 rounded-xl cursor-pointer p-1 transition-all hover:bg-slate-50 shadow-sm shrink-0">
                     </div>
                     
                     <div class="flex gap-4">
                         <input type="number" name="due_day" placeholder="Due Day (1-31)" required min="1" max="31"
-                            class="w-1/2 px-4 py-3 bg-white border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700 shadow-sm">
+                            class="w-1/2 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700 shadow-sm">
                         <input type="number" step="0.01" name="card_limit" placeholder="Credit Limit" required min="0" value="0.0"
-                            class="w-1/2 px-4 py-3 bg-white border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 text-right transition-all font-bold text-slate-700 shadow-sm">
+                            class="w-1/2 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 text-right transition-all font-bold text-slate-700 shadow-sm">
                     </div>
 
                     <button type="submit"
-                        class="w-full py-3.5 bg-blue-600 text-white rounded-2xl text-sm font-black hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all shadow-lg shadow-blue-200 mt-2">
+                        class="w-full py-3.5 bg-blue-600 text-white rounded-xl text-sm font-black hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all shadow-lg shadow-blue-200 mt-2">
                         ADD CREDIT CARD
                     </button>
                 </form>
@@ -76,21 +76,21 @@
             <div id="section-payees" class="settings-section space-y-8 animate-fade-in hidden">
                 <header>
                     <h3 class="font-black text-slate-800 text-2xl flex items-center gap-3">
-                        <span class="p-3 bg-emerald-50 rounded-2xl text-xl">🏢</span>
+                        <span class="p-3 bg-emerald-50 rounded-xl text-xl">🏢</span>
                         Global Payees
                     </h3>
                     <p class="text-xs text-slate-400 font-bold mt-2">Manage the merchants and stores you purchase from.</p>
                 </header>
 
                 <form hx-post="/settings/add-payee" hx-swap="none" hx-on::after-request="if(event.detail.successful) this.reset()"
-                    class="flex flex-col gap-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                    class="flex flex-col gap-4 bg-slate-50/50 p-6 rounded-xl border border-slate-100">
                     <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Add New Payee</h4>
                     
                     <div class="flex flex-col md:flex-row gap-4">
                         <input type="text" name="name" placeholder="e.g. Amazon" required
-                            class="flex-1 px-4 py-3 bg-white border-none rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm font-bold text-slate-700">
+                            class="flex-1 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm font-bold text-slate-700">
                         <button type="submit"
-                            class="py-3.5 px-8 bg-emerald-600 text-white rounded-2xl text-sm font-black hover:bg-emerald-700 hover:scale-[1.01] active:scale-95 transition-all shadow-lg shadow-emerald-200">
+                            class="py-3.5 px-8 bg-emerald-600 text-white rounded-xl text-sm font-black hover:bg-emerald-700 hover:scale-[1.01] active:scale-95 transition-all shadow-lg shadow-emerald-200">
                             ADD PAYEE
                         </button>
                     </div>
@@ -108,24 +108,24 @@
             <div id="section-categories" class="settings-section space-y-8 animate-fade-in hidden">
                 <header>
                     <h3 class="font-black text-slate-800 text-2xl flex items-center gap-3">
-                        <span class="p-3 bg-purple-50 rounded-2xl text-xl">🏷️</span>
+                        <span class="p-3 bg-purple-50 rounded-xl text-xl">🏷️</span>
                         Categories
                     </h3>
                     <p class="text-xs text-slate-400 font-bold mt-2">Organize your expenses with custom labels and colors.</p>
                 </header>
 
                 <form hx-post="/settings/add-category" hx-swap="none" hx-on::after-request="if(event.detail.successful) this.reset()"
-                    class="flex flex-col gap-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                    class="flex flex-col gap-4 bg-slate-50/50 p-6 rounded-xl border border-slate-100">
                     <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Add New Category</h4>
                     
                     <div class="flex flex-col md:flex-row gap-4">
                         <input type="text" name="name" placeholder="New Category Name" required
-                            class="flex-1 px-4 py-3 bg-white border-none rounded-2xl text-sm focus:ring-2 focus:ring-purple-500 transition-all font-bold text-slate-700 shadow-sm">
+                            class="flex-1 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-purple-500 transition-all font-bold text-slate-700 shadow-sm">
                         <input type="color" name="color" value="#8b5cf6"
-                            class="w-full md:w-16 h-12 bg-white border border-slate-100 rounded-2xl cursor-pointer p-1 transition-all hover:bg-slate-50 shadow-sm shrink-0">
+                            class="w-full md:w-16 h-12 bg-white border border-slate-100 rounded-xl cursor-pointer p-1 transition-all hover:bg-slate-50 shadow-sm shrink-0">
                     </div>
                     <button type="submit"
-                        class="w-full py-3.5 bg-purple-600 text-white rounded-2xl text-sm font-black hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 mt-2">
+                        class="w-full py-3.5 bg-purple-600 text-white rounded-xl text-sm font-black hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 mt-2">
                         CREATE CATEGORY
                     </button>
                 </form>

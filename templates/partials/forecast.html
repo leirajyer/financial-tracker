@@ -1,6 +1,6 @@
 <div class="animate-in fade-in slide-in-from-bottom-2 duration-500">
   <div class="grid grid-cols-12 gap-4">
-    <div class="col-span-1 lg:col-span-4 bg-white p-5 rounded-2xl border border-slate-100">
+    <div class="col-span-1 lg:col-span-4 bg-white p-5 rounded-xl border border-slate-100">
       <div id="card-status-wrapper" class="space-y-6">
         {% if pending_cards or paid_cards %}
 
@@ -50,7 +50,7 @@
           <tr class="hover:bg-slate-50 transition-colors">
             <td class="px-4 py-3 text-sm font-medium text-slate-700">{{ item.description }}</td>
             <td class="px-4 py-3 text-xs text-slate-500"><span
-                class="bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm bg-green-50">{{ item.card.name if
+                class="bg-white border border-slate-200 px-3 py-1 rounded-xl shadow-sm bg-green-50">{{ item.card.name if
                 item.card
                 else "Self" }}</span>
               <p class="text-[10px] text-orange-600 font-normal block mt-3">Payee: <span class="text-slate-700">{{

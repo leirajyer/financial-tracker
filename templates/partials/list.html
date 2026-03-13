@@ -27,12 +27,12 @@
                               <p class="text-sm font-black text-slate-800 leading-tight">{{ rec.description }}</p>
                               <div class="flex flex-wrap gap-2 mt-1.5">
                                   {% if rec.card %}
-                                  <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md text-[9px] font-black uppercase tracking-wider border border-indigo-100">
+                                  <span class="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-xl text-[9px] font-black uppercase tracking-wider border border-indigo-100">
                                       {{ rec.card.name }}
                                   </span>
                                   {% endif %}
                                   {% if rec.payee %}
-                                  <span class="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-md text-[9px] font-black uppercase tracking-wider border border-slate-100">
+                                  <span class="px-2 py-0.5 bg-slate-50 text-slate-500 rounded-xl text-[9px] font-black uppercase tracking-wider border border-slate-100">
                                       {{ rec.payee.name }}
                                   </span>
                                   {% endif %}
@@ -57,7 +57,7 @@
                           <span class="lg:hidden">Progress</span>
                           <span>{{ prog.current }}/{{ prog.total }} Months</span>
                         </div>
-                        <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div class="w-full bg-slate-100 rounded-xl h-1.5 overflow-hidden">
                           <div class="bg-indigo-500 h-full transition-all duration-700" style="width: {{ prog.percent }}%"></div>
                         </div>
                   </div>

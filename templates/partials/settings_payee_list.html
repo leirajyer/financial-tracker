@@ -1,7 +1,7 @@
 <div id="payee-list" hx-swap-oob="true" class="grid gap-2">
     {% for payee in payees %}
     <div
-        class="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-50 group transition-all hover:border-emerald-100">
+        class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-50 group transition-all hover:border-emerald-100">
         <span class="text-sm font-bold text-slate-700">{{ payee.name }}</span>
 
         <div class="flex gap-2">
@@ -21,7 +21,7 @@
 
     <!-- Edit Modal for Payee -->
     <div id="edit-payee-modal-{{ payee.id }}" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-xs md:max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative">
+        <div class="bg-white w-full max-w-xs md:max-w-sm rounded-xl p-8 shadow-2xl relative">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-black text-slate-800 tracking-tight">Edit Payee</h2>
                 <button onclick="document.getElementById('edit-payee-modal-{{ payee.id }}').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
@@ -30,12 +30,12 @@
                 <div class="flex flex-col gap-2">
                     <input type="text" name="name" value="{{ payee.name }}" required class="w-full p-4 bg-slate-50 border-none rounded-xl font-bold text-sm" placeholder="Payee Name">
                 </div>
-                <button type="submit" class="w-full py-3.5 bg-emerald-600 text-white rounded-2xl text-sm font-black hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 mt-2">SAVE CHANGES</button>
+                <button type="submit" class="w-full py-3.5 bg-emerald-600 text-white rounded-xl text-sm font-black hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 mt-2">SAVE CHANGES</button>
             </form>
         </div>
     </div>
     {% else %}
-    <div class="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+    <div class="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
         <p class="text-xs text-slate-400 italic font-medium">No payees registered.</p>
     </div>
     {% endfor %}

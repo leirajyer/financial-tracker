@@ -29,7 +29,7 @@
                             <div class="flex-1">
                                 <p class="text-sm font-black text-slate-800 leading-tight">{{ item.description }}</p>
                                 <div class="flex items-center gap-2 mt-1">
-                                    <span class="w-1.5 h-1.5 rounded-full" style="background-color: {{ item.category.color if item.category else '#cbd5e1' }}"></span>
+                                    <span class="w-1.5 h-1.5 rounded-xl" style="background-color: {{ item.category.color if item.category else '#cbd5e1' }}"></span>
                                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                                         {{ item.category.name if item.category else 'Uncategorized' }}
                                     </span>
@@ -49,7 +49,7 @@
 
                     <button hx-delete="/delete-cashflow/{{ item.id }}"
                         hx-confirm="Are you sure you want to delete this transaction?"
-                        class="p-2 text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all md:opacity-0 group-hover:opacity-100">
+                        class="p-2 text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all md:opacity-0 group-hover:opacity-100">
                         <i class="fa-solid fa-trash-can text-sm"></i>
                     </button>
                 </div>

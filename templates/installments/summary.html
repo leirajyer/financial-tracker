@@ -3,7 +3,7 @@
     {% for inst in installments %}
     {% set progress = inst.get_progress() %}
 
-    <div class="p-4 rounded-2xl bg-slate-50/50 border border-slate-100/50">
+    <div class="p-4 rounded-xl bg-slate-50/50 border border-slate-100/50">
         <div class="flex justify-between items-start mb-3">
             <div>
                 <p class="text-xs font-black text-slate-800 leading-none">{{ inst.payee.name }}</p>
@@ -16,8 +16,8 @@
         </div>
 
         <div class="space-y-1.5">
-            <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500"
+            <div class="w-full bg-slate-200 rounded-xl h-1.5 overflow-hidden">
+                <div class="bg-indigo-500 h-1.5 rounded-xl transition-all duration-500"
                     style="width: {{ progress.percent }}%"></div>
             </div>
             <div class="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest">

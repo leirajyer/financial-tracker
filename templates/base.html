@@ -7,10 +7,12 @@
   <title>Salapi</title>
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body class="bg-slate-50 min-h-screen flex flex-col">
+  <!-- Mobile Backdrop -->
+  <div id="mobile-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] hidden transition-opacity duration-300 opacity-0 md:hidden"></div>
 
   <nav class="bg-indigo-900 text-white p-4 shadow-lg sticky top-0 z-50 transition-all">
     <div class="w-full max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center">
@@ -19,7 +21,7 @@
           <span>💳</span>
           <span>Salapi</span>
         </a>
-        
+
         <button id="mobile-menu-toggle" class="md:hidden p-2 text-indigo-300 hover:text-white transition-colors">
           <svg id="menu-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16m-7 6h7" />
@@ -30,45 +32,62 @@
         </button>
       </div>
 
-      <div id="nav-content" class="hidden md:flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-8 mt-4 md:mt-0 pt-4 md:pt-0 border-t border-indigo-800 md:border-none">
-        <div class="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 sm:gap-6">
-          <a href="/cashflow" class="whitespace-nowrap text-xs sm:text-sm font-bold hover:text-emerald-300 transition-colors px-4 py-2 md:px-2 md:py-1 rounded-lg hover:bg-white/10 uppercase tracking-widest w-full md:w-auto text-center">Cashflow</a>
-          <a href="/installments" class="whitespace-nowrap text-xs sm:text-sm font-bold hover:text-indigo-300 transition-colors px-4 py-2 md:px-2 md:py-1 rounded-lg hover:bg-white/10 uppercase tracking-widest w-full md:w-auto text-center">Installments</a>
-          <a href="/settings/" class="flex items-center justify-center gap-2 p-2 text-slate-400 hover:text-white transition-colors w-full md:w-auto">
+      <div id="nav-content"
+        class="fixed top-0 right-0 h-full w-[300px] bg-indigo-950 shadow-2xl z-[60] transform translate-x-full transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col p-8 md:static md:h-auto md:w-auto md:bg-transparent md:translate-x-0 md:flex-row md:items-center md:p-0 md:gap-8 md:shadow-none md:flex">
+        
+        <!-- Mobile Header (inside drawer) -->
+        <div class="flex items-center justify-between mb-8 md:hidden">
+          <span class="font-black text-xs uppercase tracking-[0.3em] text-indigo-400">Navigation</span>
+        </div>
+        <div class="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 sm:gap-6 nav-links">
+          <a href="/cashflow"
+            class="nav-item whitespace-nowrap text-xs sm:text-sm font-bold hover:text-emerald-300 transition-colors px-4 py-2 md:px-2 md:py-1 rounded-xl hover:bg-white/10 uppercase tracking-widest w-full md:w-auto text-center translate-x-12 opacity-0 md:translate-x-0 md:opacity-100">Cashflow</a>
+          <a href="/installments"
+            class="nav-item whitespace-nowrap text-xs sm:text-sm font-bold hover:text-indigo-300 transition-colors px-4 py-2 md:px-2 md:py-1 rounded-xl hover:bg-white/10 uppercase tracking-widest w-full md:w-auto text-center translate-x-12 opacity-0 md:translate-x-0 md:opacity-100">Installments</a>
+          <a href="/settings/"
+            class="nav-item flex items-center justify-center gap-2 p-2 text-slate-400 hover:text-white transition-colors w-full md:w-auto translate-x-12 opacity-0 md:translate-x-0 md:opacity-100">
             <span class="md:hidden font-bold text-xs uppercase tracking-widest">Settings</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </a>
         </div>
 
-        <div class="flex flex-col md:flex-row items-center gap-4 sm:gap-6 w-full md:w-auto pt-4 md:pt-0 border-t border-indigo-800 md:border-none">
-          <div class="flex items-center gap-3 shrink-0">
+        <div
+          class="flex flex-col md:flex-row items-center gap-6 w-full md:w-auto pt-8 md:pt-0 border-t border-indigo-900 md:border-none mt-auto md:mt-0">
+          <div class="nav-item flex items-center gap-3 shrink-0 translate-x-12 opacity-0 md:translate-x-0 md:opacity-100">
             <div class="flex flex-col items-end pr-3 sm:pr-4 border-r border-indigo-800">
-              <span class="text-[8px] sm:text-[9px] text-indigo-300 uppercase font-black tracking-widest leading-none">Month Total</span>
+              <span
+                class="text-[8px] sm:text-[9px] text-indigo-300 uppercase font-black tracking-widest leading-none">Month
+                Total</span>
               <span id="nav-monthly-total" class="text-xs sm:text-sm font-mono font-bold text-indigo-200">
-                  {% if total_due %}₱{{ "{:,.2f}".format(total_due) }}{% else %}₱0.00{% endif %}
+                {% if total_due %}₱{{ "{:,.2f}".format(total_due) }}{% else %}₱0.00{% endif %}
               </span>
             </div>
-            
+
             <div class="flex flex-col items-end">
               <span class="text-[9px] text-indigo-300 uppercase font-black tracking-widest leading-none">User</span>
-              <span class="text-xs font-bold leading-tight uppercase tracking-tighter">{% if current_user %}{{ current_user.username }}{% else %}Guest{% endif %}</span>
+              <span class="text-xs font-bold leading-tight uppercase tracking-tighter">{% if current_user %}{{
+                current_user.username }}{% else %}Guest{% endif %}</span>
             </div>
 
             {% if current_user %}
             <a href="/logout"
-              class="bg-rose-500 hover:bg-rose-600 text-white p-2 rounded-lg transition-all shadow-lg shadow-rose-900/20 group"
+              class="bg-rose-500 hover:bg-rose-600 text-white p-2 rounded-xl transition-all shadow-lg shadow-rose-900/20 group"
               title="Logout">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </a>
             {% else %}
             <a href="/login"
-              class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 sm:px-4 py-1.5 rounded-lg text-[10px] sm:text-xs font-black uppercase transition-all shadow-lg shadow-emerald-900/20"
+              class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 sm:px-4 py-1.5 rounded-xl text-[10px] sm:text-xs font-black uppercase transition-all shadow-lg shadow-emerald-900/20"
               title="Login">
               Login
             </a>
@@ -92,12 +111,29 @@
   <div id="toast-container"></div>
 
   <style>
-    @keyframes fadeInToast { 
-        0% { opacity: 0; transform: translateY(20px) scale(0.95); } 
-        100% { opacity: 1; transform: translateY(0) scale(1); } 
+    @keyframes fadeInToast {
+      0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
-    .animate-fade-in { 
-        animation: fadeInToast 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+
+    .animate-fade-in {
+      animation: fadeInToast 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideInRight {
+      from { transform: translateX(3rem); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .nav-item-active {
+      animation: slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
   </style>
 
@@ -108,51 +144,89 @@
         const msg = decodeURIComponent(match[2].replace(/\+/g, ' '));
         const toast = document.getElementById('toast-container');
         toast.innerHTML = `
-            <div class="fixed bottom-6 right-6 bg-slate-900 border border-slate-700 text-white px-6 py-4 rounded-2xl shadow-2xl font-black text-sm animate-fade-in z-[100] flex items-center gap-3 shadow-emerald-900/20">
+            <div class="fixed bottom-6 right-6 bg-slate-900 border border-slate-700 text-white px-6 py-4 rounded-xl shadow-2xl font-black text-sm animate-fade-in z-[100] flex items-center gap-3 shadow-emerald-900/20">
                 <span class="text-xl">✨</span> ${msg}
             </div>
         `;
         document.cookie = "toast_msg=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        
-        setTimeout(() => { 
-            if (toast.firstChild) {
-                toast.firstChild.style.opacity = '0';
-                toast.firstChild.style.transform = 'translateY(10px)';
-                toast.firstChild.style.transition = 'all 0.3s ease-out';
-                setTimeout(() => { toast.innerHTML = ""; }, 300);
-            }
+
+        setTimeout(() => {
+          if (toast.firstChild) {
+            toast.firstChild.style.opacity = '0';
+            toast.firstChild.style.transform = 'translateY(10px)';
+            toast.firstChild.style.transition = 'all 0.3s ease-out';
+            setTimeout(() => { toast.innerHTML = ""; }, 300);
+          }
         }, 3500);
       }
     }
 
     // Process toasts on regular page load
     document.addEventListener('DOMContentLoaded', checkToastCookie);
-    
+
     // Process toasts after HTMX seamless swaps
     document.body.addEventListener('htmx:afterOnLoad', function (evt) {
-        checkToastCookie();
+      checkToastCookie();
     });
 
     // Mobile Menu Toggle
     const menuToggle = document.getElementById('mobile-menu-toggle');
     const navContent = document.getElementById('nav-content');
+    const backdrop = document.getElementById('mobile-backdrop');
     const menuIcon = document.getElementById('menu-icon');
     const closeIcon = document.getElementById('close-icon');
 
-    if (menuToggle && navContent) {
+    if (menuToggle && navContent && backdrop) {
+      function openMobileMenu() {
+        navContent.classList.remove('translate-x-full');
+        navContent.classList.add('translate-x-0');
+        backdrop.classList.remove('hidden');
+        setTimeout(() => backdrop.classList.add('opacity-100'), 10);
+        menuIcon.classList.add('hidden');
+        closeIcon.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        // Trigger staggered animation
+        const navItems = navContent.querySelectorAll('.nav-item');
+        navItems.forEach((item, index) => {
+          item.style.animationDelay = `${(index + 1) * 0.1}s`;
+          item.classList.add('nav-item-active');
+        });
+      }
+
+      function closeMobileMenu() {
+        navContent.classList.add('translate-x-full');
+        navContent.classList.remove('translate-x-0');
+        backdrop.classList.remove('opacity-100');
+        menuIcon.classList.remove('hidden');
+        closeIcon.classList.add('hidden');
+        document.body.style.overflow = '';
+        setTimeout(() => {
+          backdrop.classList.add('hidden');
+          // Reset animations
+          const navItems = navContent.querySelectorAll('.nav-item');
+          navItems.forEach(item => {
+            item.classList.remove('nav-item-active');
+          });
+        }, 300);
+      }
+
       menuToggle.addEventListener('click', () => {
-        const isHidden = navContent.classList.contains('hidden');
-        if (isHidden) {
-          navContent.classList.remove('hidden');
-          navContent.classList.add('flex');
-          menuIcon.classList.add('hidden');
-          closeIcon.classList.remove('hidden');
+        const isOpen = navContent.classList.contains('translate-x-0');
+        if (!isOpen) {
+          openMobileMenu();
         } else {
-          navContent.classList.add('hidden');
-          navContent.classList.remove('flex');
-          menuIcon.classList.remove('hidden');
-          closeIcon.classList.add('hidden');
+          closeMobileMenu();
         }
+      });
+
+      backdrop.addEventListener('click', closeMobileMenu);
+      
+      // Close menu if a link is clicked (useful for anchors)
+      navContent.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          if (window.innerWidth < 768) closeMobileMenu();
+        });
       });
     }
   </script>
