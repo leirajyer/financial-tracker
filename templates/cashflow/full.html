@@ -13,38 +13,28 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-            <div class="flex items-center gap-3 mb-2">
-                <div
-                    class="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 text-sm">
-                    💰</div>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Income</p>
-            </div>
-            <p class="text-2xl font-black text-emerald-500">₱{{ "{:,.2f}".format(total_income) }}</p>
+    <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm mb-8 flex flex-col md:flex-row justify-around items-center gap-6 md:gap-0">
+        <div class="flex flex-col items-center md:items-start flex-1">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Income</p>
+            <p class="text-xl font-black text-emerald-500 tracking-tighter">₱{{ "{:,.2f}".format(total_income) }}</p>
+        </div>
+        
+        <div class="hidden md:block w-px h-8 bg-slate-100 mx-8"></div>
+        
+        <div class="flex flex-col items-center md:items-start flex-1">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Expenses</p>
+            <p class="text-xl font-black text-rose-500 tracking-tighter">₱{{ "{:,.2f}".format(total_expense) }}</p>
         </div>
 
-        <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="w-8 h-8 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 text-sm">💸
-                </div>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Expenses</p>
-            </div>
-            <p class="text-2xl font-black text-rose-500">₱{{ "{:,.2f}".format(total_expense) }}</p>
-        </div>
+        <div class="hidden md:block w-px h-8 bg-slate-100 mx-8"></div>
 
-        <div class="bg-slate-900 p-6 rounded-xl shadow-xl shadow-slate-200">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-white text-xs">⚖️
-                </div>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Net Balance</p>
-            </div>
-            <p class="text-2xl font-black {% if net_balance >= 0 %}text-emerald-400{% else %}text-rose-400{% endif %}">
+        <div class="flex flex-col items-center md:items-start flex-1 text-right">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Net Balance</p>
+            <p class="text-xl font-black {% if net_balance >= 0 %}text-indigo-600{% else %}text-rose-600{% endif %} tracking-tighter">
                 ₱{{ "{:,.2f}".format(net_balance) }}
             </p>
         </div>
     </div>
-
     <!-- Filters Bar -->
     <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mb-6 flex flex-wrap items-center gap-4">
         <form hx-get="/cashflow/" hx-push-url="true" hx-target="body" class="flex flex-wrap items-center gap-4 w-full">
