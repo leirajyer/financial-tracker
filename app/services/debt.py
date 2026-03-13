@@ -194,8 +194,8 @@ def get_global_updates_fragment(
     else:
         burn_display = f"₱{total_val:,.2f}"
 
-    # 1. Burnout Fragment (targets your navbar ID)
-    fragments = [f'<span id="total-burnout" hx-swap-oob="true">{burn_display}</span>']
+    # 1. Remaining Value Fragment
+    fragments = []
     fragments.append(
         f'<span id="nav-remaining-value" class="text-sm font-bold text-red-600 bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm bg-red-100" hx-swap-oob="true">{burn_display}</span>'
     )

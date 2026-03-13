@@ -42,21 +42,7 @@
       </div>
 
       <div class="hidden lg:flex items-center gap-6">
-        <div id="nav-total-burn"
-          class="flex items-center gap-2 bg-indigo-800/50 px-4 py-1.5 rounded-full border border-indigo-700 transition-all duration-500 max-w-[250px] overflow-hidden">
-          <span class="text-[9px] uppercase font-black text-indigo-300 whitespace-nowrap">Remaining:</span>
-          <span id="nav-total-value" class="text-sm font-mono font-bold text-emerald-400 truncate">
-            <span id="total-burnout">
-              {% if total_burn and total_burn > 0 %}
-              ₱{{ "{:,.2f}".format(total_burn) }}
-              {% else %}
-              <span class="text-emerald-400">PAID 🎉</span>
-              {% endif %}
-            </span>
-          </span>
-        </div>
-
-        <div class="flex items-center gap-3 border-l border-indigo-800 pl-6 shrink-0">
+        <div class="flex items-center gap-3 shrink-0">
           <div class="flex flex-col items-end pr-4 border-r border-indigo-800 mr-2">
             <span class="text-[9px] text-indigo-300 uppercase font-bold">Month Total</span>
             <span id="nav-monthly-total" class="text-sm font-mono font-bold text-indigo-200">
