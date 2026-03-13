@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime as dt
 
 # 1. Standardize your Base import (Use the one from your models package)
-from app.database import engine, get_db
+from app.database import engine, get_db, SessionLocal
 from app.models.base import Base
 
 # 2. IMPORT THE MODELS EXPLICITLY
@@ -13,8 +13,7 @@ from app.models import CashFlow, Installment
 
 from app.services.debt import calculate_monthly_totals
 
-# 3. Create the tables in Postgres (Only need this once)
-Base.metadata.create_all(bind=engine)
+# REMOVED top-level metadata creation: it's now in startup_event
 
 from app.routes import (
     installments_router,
@@ -41,20 +40,24 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 # Middleware to add current_user to all template contexts
 @app.middleware("http")
 async def add_user_to_request(request: Request, call_next):
-    db: Session = next(get_db())
-    user = await get_current_user(request, db)
-    request.state.user = user
+    # Use a direct session to ensure it gets closed properly in finally block
+    db: Session = SessionLocal()
+    try:
+        user = await get_current_user(request, db)
+        request.state.user = user
 
-    # Public paths that don't require login
-    public_paths = ["/login", "/register", "/auth", "/static", "/favicon.ico"]
-    
-    is_public = any(request.url.path.startswith(path) for path in public_paths)
-    
-    if not user and not is_public:
-        return RedirectResponse(url="/login", status_code=303)
+        # Public paths that don't require login
+        public_paths = ["/login", "/register", "/auth", "/static", "/favicon.ico"]
         
-    response = await call_next(request)
-    return response
+        is_public = any(request.url.path.startswith(path) for path in public_paths)
+        
+        if not user and not is_public:
+            return RedirectResponse(url="/login", status_code=303)
+            
+        response = await call_next(request)
+        return response
+    finally:
+        db.close()
 
 # Standardize templates to always include current_user
 templates.env.globals["current_user"] = None # Placeholder
@@ -64,7 +67,12 @@ from app.seed import seed_db
 
 @app.on_event("startup")
 async def startup_event():
-    seed_db()
+    # Attempt to create tables on startup - more resilient for cloud environments
+    try:
+        Base.metadata.create_all(bind=engine)
+        seed_db()
+    except Exception as e:
+        print(f"⚠️ Startup DB Warning: {e}")
 
 
 # ... router includes ...
