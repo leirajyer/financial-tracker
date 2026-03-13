@@ -35,6 +35,7 @@ services:
       GOOGLE_CLIENT_SECRET: "YOUR_GOOGLE_CLIENT_SECRET"
       SECRET_KEY: "YOUR_SECRET_KEY"
       AUTHLIB_INSECURE_TRANSPORT: "true"
+      GEMINI_API_KEY: "AIzaSyAduQcd38944tRx3BUMhI80jCzfUJQ4K98"
     # Use the 'module' syntax to run uvicorn
     command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
