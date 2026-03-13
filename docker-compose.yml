@@ -2,24 +2,24 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: pesopulse_db
+    container_name: salapi_db
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: pesopulse
+      POSTGRES_DB: salapi
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d pesopulse"]
+      test: ["CMD-SHELL", "pg_isready -U user -d salapi"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   app:
     build: .
-    container_name: pesopulse_app
+    container_name: salapi_app
     # Set the context to where the app folder lives
     working_dir: /code
     ports:
@@ -27,7 +27,7 @@ services:
     volumes:
       - .:/code
     environment:
-      DATABASE_URL: postgresql://user:password@db:5432/pesopulse
+      DATABASE_URL: postgresql://user:password@db:5432/salapi
       PYTHONPATH: /code
       PYTHONDONTWRITEBYTECODE: 1
       PYTHONUNBUFFERED: 1
