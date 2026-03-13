@@ -32,6 +32,9 @@ class Installment(Base):
     card = relationship("app.models.card.Card", back_populates="installments")
     payee = relationship("app.models.payee.Payee", back_populates="installments")
 
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("app.models.user.User", back_populates="installments")
+
     @property
     def total_to_pay(self):
         """Principal + Total Interest."""

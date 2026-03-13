@@ -18,3 +18,6 @@ class CashFlow(Base):
 
     category_id = Column(Integer, ForeignKey("categories.id"))
     category = relationship("app.models.category.Category", back_populates="cash_flows")
+
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("app.models.user.User", back_populates="cash_flows")

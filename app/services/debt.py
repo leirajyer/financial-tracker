@@ -5,7 +5,7 @@ import calendar
 
 
 def calculate_monthly_totals(
-    db_session, year=None, month=None, card_id=None, payee_id=None
+    db_session, year=None, month=None, card_id=None, payee_id=None, user_id=None
 ):
     """Calculates summary stats and separates cards by their payment status."""
     today = date.today()
@@ -17,6 +17,8 @@ def calculate_monthly_totals(
 
     query = db_session.query(Installment).options(joinedload(Installment.card))
 
+    if user_id:
+        query = query.filter(Installment.owner_id == user_id)
     if card_id:
         query = query.filter(Installment.card_id == card_id)
     if payee_id:
@@ -24,12 +26,14 @@ def calculate_monthly_totals(
 
     all_items = query.all()
 
-    statuses = (
-        db_session.query(CardMonthlyStatus)
-        .filter(CardMonthlyStatus.month_year == month_year_str)
-        .all()
-    )
-
+    status_query = db_session.query(CardMonthlyStatus).filter(CardMonthlyStatus.month_year == month_year_str)
+    
+    # If we want to be strict, CardMonthlyStatus should also have owner_id
+    # But currently it relates to Card, and if we filter Installments by user_id, 
+    # we only get cards belonging to that user.
+    # However, let's filter statuses by checking the card's owner.
+    
+    statuses = status_query.all()
     paid_status_map = {s.card_id: s.is_paid for s in statuses}
 
     total_burn = 0  # Unpaid amount
@@ -80,7 +84,8 @@ def calculate_monthly_totals(
         percentage_paid = round((total_paid / total_due) * 100)
 
     # Trend Analysis Logic
-    three_months_out = get_debt_burn_down(db_session, months_to_forecast=4)[3]
+    burn_down = get_debt_burn_down(db_session, months_to_forecast=4, user_id=user_id)
+    three_months_out = burn_down[3]
     future_total = three_months_out["total"]
     savings_delta = total_due - future_total
     percent_drop = round((savings_delta / total_due * 100)) if total_due > 0 else 0
@@ -126,7 +131,7 @@ def get_card_status(db, card_id, year, month):
     return "PENDING"
 
 
-def get_monthly_forecast(db, year, month, card_id=None, payee_id=None):
+def get_monthly_forecast(db, year, month, card_id=None, payee_id=None, user_id=None):
     """Aggregates all installments for a specific month and groups them by card."""
     target_date = date(year, month, 1)
 
@@ -135,6 +140,8 @@ def get_monthly_forecast(db, year, month, card_id=None, payee_id=None):
         joinedload(Installment.card), joinedload(Installment.payee)
     )
 
+    if user_id:
+        query = query.filter(Installment.owner_id == user_id)
     if card_id:
         query = query.filter(Installment.card_id == card_id)
     if payee_id:
@@ -173,11 +180,11 @@ def get_monthly_forecast(db, year, month, card_id=None, payee_id=None):
 
 
 def get_global_updates_fragment(
-    db, year, month, card_id=None, payee_id=None, toast_msg=None
+    db, year, month, card_id=None, payee_id=None, toast_msg=None, user_id=None
 ):
     """Standardized helper for Out-of-Band UI updates with Fully Paid state."""
     stats = calculate_monthly_totals(
-        db, year, month, card_id=card_id, payee_id=payee_id
+        db, year, month, card_id=card_id, payee_id=payee_id, user_id=user_id
     )
     total_val = stats.get("total_burn", 0)
 
@@ -192,6 +199,10 @@ def get_global_updates_fragment(
     fragments.append(
         f'<span id="nav-remaining-value" class="text-sm font-bold text-red-600 bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm bg-red-100" hx-swap-oob="true">{burn_display}</span>'
     )
+    
+    # NEW: Month Total OOB update
+    total_due_display = f"₱{stats.get('total_due', 0):,.2f}"
+    fragments.append(f'<span id="nav-monthly-total" hx-swap-oob="true">{total_due_display}</span>')
 
     # 2. Toast Fragment
     if toast_msg:
@@ -211,11 +222,16 @@ def get_global_updates_fragment(
     return "".join(fragments)
 
 
-def get_debt_burn_down(db_session, months_to_forecast=12):
+def get_debt_burn_down(db_session, months_to_forecast=12, user_id=None):
     """Day 10: Calculates the total monthly bill for the next X months."""
     today = date.today()
     forecast = []
-    items = db_session.query(Installment).all()
+    
+    query = db_session.query(Installment)
+    if user_id:
+        query = query.filter(Installment.owner_id == user_id)
+    
+    items = query.all()
 
     for i in range(months_to_forecast):
         target_month = (today.month + i - 1) % 12 + 1
@@ -234,9 +250,13 @@ def get_debt_burn_down(db_session, months_to_forecast=12):
     return forecast
 
 
-def get_freedom_date(db_session):
+def get_freedom_date(db_session, user_id=None):
     """Day 10: Finds the furthest end_date for the 'Freedom' milestone."""
-    items = db_session.query(Installment).all()
+    query = db_session.query(Installment)
+    if user_id:
+        query = query.filter(Installment.owner_id == user_id)
+        
+    items = query.all()
     if not items:
         return "No active debt"
     return max(item.end_date for item in items).strftime("%B %Y")

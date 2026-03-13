@@ -1,3 +1,4 @@
+
 services:
   db:
     image: postgres:15-alpine
@@ -10,7 +11,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # ✅ ADD THIS: Tells Docker how to check if Postgres is REALLY ready
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d pesopulse"]
       interval: 5s
@@ -20,11 +20,23 @@ services:
   app:
     build: .
     container_name: pesopulse_app
+    # Set the context to where the app folder lives
+    working_dir: /code
     ports:
       - "8000:8000"
+    volumes:
+      - .:/code
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/pesopulse
-    # ✅ UPDATE THIS: Tells the App to wait for the 'healthy' status
+      PYTHONPATH: /code
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
+      GOOGLE_CLIENT_ID: "YOUR_GOOGLE_CLIENT_ID"
+      GOOGLE_CLIENT_SECRET: "YOUR_GOOGLE_CLIENT_SECRET"
+      SECRET_KEY: "YOUR_SECRET_KEY"
+      AUTHLIB_INSECURE_TRANSPORT: "true"
+    # Use the 'module' syntax to run uvicorn
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       db:
         condition: service_healthy

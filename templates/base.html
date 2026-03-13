@@ -11,88 +11,136 @@
 
 <body class="bg-slate-50 min-h-screen flex flex-col">
 
-  <nav class="bg-indigo-900 text-white p-4 flex justify-between items-center shadow-lg sticky top-0 z-50">
-    <div class="flex items-center gap-8">
-      <a href="/" class="font-bold text-xl flex items-center gap-2">
-        <span>💳</span>
-        <span class="hidden sm:inline">Tracker</span>
-      </a>
-      <div class="flex gap-6 items-center">
-        <a href="/cashflow" class="...">Cashflow</a>
-
-        <a href="/installments" class="...">Installments</a>
-
-        <button onclick="openSettingsModal()" class="p-2.5 text-slate-400 hover:text-slate-900 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <div class="flex items-center gap-6">
-      <div id="nav-total-burn"
-        class="hidden md:flex items-center gap-2 bg-indigo-800/50 px-4 py-1.5 rounded-full border border-indigo-700 transition-all duration-500">
-        <span class="text-[9px] uppercase font-black text-indigo-300">Remaining Balance:</span>
-        <span id="nav-total-value" class="text-sm font-mono font-bold text-emerald-400">
-          <span id="total-burnout">
-            {% if total_burn and total_burn > 0 %}
-            ₱{{ "{:,.2f}".format(total_burn) }}
-            {% else %}
-            <span class="text-emerald-400">FULLY PAID 🎉</span>
-            {% endif %}
-          </span>
-        </span>
-      </div>
-
-      <div class="flex items-center gap-3 border-l border-indigo-800 pl-6">
-        <div class="flex flex-col items-end">
-          <span class="text-[9px] text-indigo-300 uppercase font-bold">Logged in</span>
-          <span class="text-xs font-bold">leirajyer</span>
+  <nav class="bg-indigo-900 text-white p-4 shadow-lg sticky top-0 z-50 transition-all">
+    <div class="w-full max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center justify-between w-full md:w-auto">
+        <a href="/" class="font-bold text-xl flex items-center gap-2">
+          <span>💳</span>
+          <span>Tracker</span>
+        </a>
+        
+        <!-- Mobile menu handles can go here if needed later -->
+        <div class="flex md:hidden items-center gap-4">
+          <a href="/settings/" class="p-2 text-slate-400 hover:text-slate-100 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </a>
         </div>
-        <a href="/logout"
-          class="bg-rose-500 hover:bg-rose-600 text-white p-2 rounded-lg transition-all shadow-lg shadow-rose-900/20 group"
-          title="Logout">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </div>
+
+      <div class="flex items-center w-full md:w-auto overflow-x-auto pb-1 md:pb-0 gap-6">
+        <a href="/cashflow" class="whitespace-nowrap font-medium hover:text-emerald-300 transition-colors">Cashflow</a>
+        <a href="/installments" class="whitespace-nowrap font-medium hover:text-indigo-300 transition-colors">Installments</a>
+        <a href="/settings/" class="hidden md:block p-2 text-slate-400 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         </a>
+      </div>
+
+      <div class="hidden lg:flex items-center gap-6">
+        <div id="nav-total-burn"
+          class="flex items-center gap-2 bg-indigo-800/50 px-4 py-1.5 rounded-full border border-indigo-700 transition-all duration-500 max-w-[250px] overflow-hidden">
+          <span class="text-[9px] uppercase font-black text-indigo-300 whitespace-nowrap">Remaining:</span>
+          <span id="nav-total-value" class="text-sm font-mono font-bold text-emerald-400 truncate">
+            <span id="total-burnout">
+              {% if total_burn and total_burn > 0 %}
+              ₱{{ "{:,.2f}".format(total_burn) }}
+              {% else %}
+              <span class="text-emerald-400">PAID 🎉</span>
+              {% endif %}
+            </span>
+          </span>
+        </div>
+
+        <div class="flex items-center gap-3 border-l border-indigo-800 pl-6 shrink-0">
+          <div class="flex flex-col items-end pr-4 border-r border-indigo-800 mr-2">
+            <span class="text-[9px] text-indigo-300 uppercase font-bold">Month Total</span>
+            <span id="nav-monthly-total" class="text-sm font-mono font-bold text-indigo-200">
+                {% if total_due %}₱{{ "{:,.2f}".format(total_due) }}{% else %}₱0.00{% endif %}
+            </span>
+          </div>
+          <div class="flex flex-col items-end">
+            <span class="text-[9px] text-indigo-300 uppercase font-bold">Logged in</span>
+            <span class="text-xs font-bold">{% if current_user %}{{ current_user.username }}{% else %}Guest{% endif %}</span>
+          </div>
+          {% if current_user %}
+          <a href="/logout"
+            class="bg-rose-500 hover:bg-rose-600 text-white p-2 rounded-lg transition-all shadow-lg shadow-rose-900/20 group"
+            title="Logout">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </a>
+          {% else %}
+          <a href="/login"
+            class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-900/20"
+            title="Login">
+            Login
+          </a>
+          {% endif %}
+        </div>
       </div>
     </div>
   </nav>
 
-  <main class="container mx-auto px-4 py-8">
+  <main class="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
     {% block content %}
     {% endblock %}
   </main>
 
-  <footer class="bg-white border-t border-slate-200 p-6 mt-12">
-    <div class="container mx-auto text-center text-slate-400 text-xs">
-      &copy; 2026 Financial Tracker - Day 8 Build
+  <footer class="bg-white border-t border-slate-200 p-6 mt-12 w-full">
+    <div class="w-full max-w-[1600px] mx-auto text-center text-slate-400 text-xs">
+      &copy; 2026 Financial Tracker - Fluid Build
     </div>
   </footer>
   <div id="toast-container"></div>
 
-  <script>
-    document.body.addEventListener('htmx:afterOnLoad', function (evt) {
-      const toast = document.getElementById('toast-container');
-      if (toast && toast.innerText.trim() !== "") {
-        setTimeout(() => {
-          toast.innerHTML = "";
-        }, 3000);
-      }
-    });
-    function openSettingsModal() {
-      document.getElementById('settingsModal').classList.replace('hidden', 'flex');
+  <style>
+    @keyframes fadeInToast { 
+        0% { opacity: 0; transform: translateY(20px) scale(0.95); } 
+        100% { opacity: 1; transform: translateY(0) scale(1); } 
     }
-    function closeSettingsModal() {
-      document.getElementById('settingsModal').classList.replace('flex', 'hidden');
+    .animate-fade-in { 
+        animation: fadeInToast 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+    }
+  </style>
+
+  <script>
+    function checkToastCookie() {
+      const match = document.cookie.match(/(^| )toast_msg=([^;]+)/);
+      if (match) {
+        const msg = decodeURIComponent(match[2].replace(/\+/g, ' '));
+        const toast = document.getElementById('toast-container');
+        toast.innerHTML = `
+            <div class="fixed bottom-6 right-6 bg-slate-900 border border-slate-700 text-white px-6 py-4 rounded-2xl shadow-2xl font-black text-sm animate-fade-in z-[100] flex items-center gap-3 shadow-emerald-900/20">
+                <span class="text-xl">✨</span> ${msg}
+            </div>
+        `;
+        document.cookie = "toast_msg=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        
+        setTimeout(() => { 
+            if (toast.firstChild) {
+                toast.firstChild.style.opacity = '0';
+                toast.firstChild.style.transform = 'translateY(10px)';
+                toast.firstChild.style.transition = 'all 0.3s ease-out';
+                setTimeout(() => { toast.innerHTML = ""; }, 300);
+            }
+        }, 3500);
+      }
     }
 
+    // Process toasts on regular page load
+    document.addEventListener('DOMContentLoaded', checkToastCookie);
+    
+    // Process toasts after HTMX seamless swaps
+    document.body.addEventListener('htmx:afterOnLoad', function (evt) {
+        checkToastCookie();
+    });
   </script>
 </body>
 

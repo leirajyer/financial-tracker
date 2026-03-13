@@ -17,6 +17,9 @@ class Card(Base):
     )
     monthly_statuses = relationship("CardMonthlyStatus", back_populates="card")
 
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("app.models.user.User", back_populates="cards")
+
 
 class CardMonthlyStatus(Base):
     __tablename__ = "card_monthly_statuses"

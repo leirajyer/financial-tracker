@@ -1,48 +1,47 @@
-from app.models import Category
 from datetime import datetime as dt
 from typing import Optional
 from fastapi import APIRouter, Depends, Form, Request, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 from dateutil.relativedelta import relativedelta
 
 from app.database import get_db
 from app.models import Installment, Card, Payee, Category
 from app.services.debt import calculate_monthly_totals, get_global_updates_fragment
-from app.core.ui import templates  # Use shared template engine if available
+from app.core.ui import templates
 
 router = APIRouter(prefix="/installments", tags=["Installments"])
 
 
-# ==========================================
-# 📖 VIEW ROUTES
-# ==========================================
 @router.get("/")
 async def list_all_installments(request: Request, db: Session = Depends(get_db)):
+    user = request.state.user
     installments = (
         db.query(Installment)
+        .filter(Installment.owner_id == user.id)
         .options(joinedload(Installment.card))
         .order_by(Installment.start_date.desc())
         .all()
     )
 
-    # Calculate global credit health
-    total_remaining = sum(
-        (inst.total_amount - (inst.monthly_payment * inst.get_progress()["current"]))
-        for inst in installments
-    )
+    stats = calculate_monthly_totals(db, user_id=user.id)
+    total_remaining = stats["total_remaining_debt"]
+    total_due = stats["total_due"]
     active_count = len([i for i in installments if i.status == "active"])
 
-    cards = db.query(Card).order_by(Card.name).all()
-    payees = db.query(Payee).order_by(Payee.name).all()
-    categories = db.query(Category).all()
+    cards = db.query(Card).filter(Card.owner_id == user.id).order_by(Card.name).all()
+    payees = db.query(Payee).filter(or_(Payee.owner_id == user.id, Payee.owner_id == None)).order_by(Payee.name).all()
+    categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
 
-    return templates.TemplateResponse(
+    from app.core.ui import render_template
+    return render_template(
         "installments/full.html",
+        request,
         {
-            "request": request,
             "installments": installments,
             "total_remaining": total_remaining,
+            "total_due": total_due,
             "active_count": active_count,
             "cards": cards,
             "categories": categories,
@@ -53,10 +52,11 @@ async def list_all_installments(request: Request, db: Session = Depends(get_db))
 
 @router.get("/add", response_class=HTMLResponse)
 async def add_installment_form(request: Request, db: Session = Depends(get_db)):
-    """Renders the full page form to add a new installment."""
-    cards = db.query(Card).order_by(Card.name).all()
-    payees = db.query(Payee).order_by(Payee.name).all()
-    categories = db.query(Category).all()
+    user = request.state.user
+    cards = db.query(Card).filter(Card.owner_id == user.id).order_by(Card.name).all()
+    payees = db.query(Payee).filter(or_(Payee.owner_id == user.id, Payee.owner_id == None)).order_by(Payee.name).all()
+    categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
+    
     payment_terms = [
         {"label": "Straight", "value": 1},
         {"label": "3 Months", "value": 3},
@@ -67,10 +67,11 @@ async def add_installment_form(request: Request, db: Session = Depends(get_db)):
         {"label": "48 Months (4 years)", "value": 48},
         {"label": "60 Months (5 years)", "value": 60},
     ]
-    return templates.TemplateResponse(
+    from app.core.ui import render_template
+    return render_template(
         "installments/form.html",
+        request,
         {
-            "request": request,
             "cards": cards,
             "payees": payees,
             "categories": categories,
@@ -82,31 +83,29 @@ async def add_installment_form(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/list", response_class=HTMLResponse)
 async def get_installments_list(request: Request, db: Session = Depends(get_db)):
-    """HTMX endpoint to get the scrollable list of installments."""
+    user = request.state.user
     records = (
         db.query(Installment)
+        .filter(Installment.owner_id == user.id)
         .options(joinedload(Installment.card), joinedload(Installment.payee))
         .order_by(Installment.start_date.desc())
         .all()
     )
-    stats = calculate_monthly_totals(db)
+    stats = calculate_monthly_totals(db, user_id=user.id)
 
-    return templates.TemplateResponse(
+    from app.core.ui import render_template
+    return render_template(
         "partials/list.html",
-        {"request": request, "records": records, "total_burn": stats["total_burn"]},
+        request,
+        {"records": records, "total_burn": stats["total_burn"]},
     )
-
-
-# ==========================================
-# ⚡ ACTION ROUTES (POST/DELETE)
-# ==========================================
 
 
 @router.post("/add")
 async def create_installment(
+    request: Request,
     description: str = Form(..., alias="item_name"),
     total_amount: float = Form(...),
-    # The interest rate sent from the form (defaulting to 0 for 0% promos)
     interest_rate: float = Form(0.0, alias="interest_rate"),
     total_months: int = Form(..., alias="months"),
     card_id: int = Form(...),
@@ -115,18 +114,12 @@ async def create_installment(
     start_period: str = Form(..., alias="start_date_str"),
     db: Session = Depends(get_db),
 ):
-    # 1. Parse date
+    user = request.state.user
     start_date = dt.strptime(start_period, "%Y-%m").date()
 
-    # 2. Logic: Monthly Add-on Interest Calculation
-    # Formula: Total Interest = Principal * (Monthly Rate / 100) * Number of Months
     total_interest_amt = total_amount * (interest_rate / 100) * total_months
     monthly_payment = (total_amount + total_interest_amt) / total_months
 
-    # End date calculation (Inclusive of start month)
-    end_date = start_date + relativedelta(months=total_months - 1)
-
-    # 3. Database Save
     new_item = Installment(
         description=description,
         total_amount=total_amount,
@@ -138,6 +131,7 @@ async def create_installment(
         payee_id=payee_id,
         category_id=category_id,
         status="active",
+        owner_id=user.id
     )
 
     db.add(new_item)
@@ -147,43 +141,33 @@ async def create_installment(
 
 
 @router.delete("/{rec_id}", response_class=HTMLResponse)
-async def delete_installment(
+async def delete_installment_htmx(
     request: Request, rec_id: int, db: Session = Depends(get_db)
 ):
-    item = db.query(Installment).filter(Installment.id == rec_id).first()
+    user = request.state.user
+    item = db.query(Installment).filter(Installment.id == rec_id, Installment.owner_id == user.id).first()
     if item:
         db.delete(item)
         db.commit()
 
-    # Return the HTMX global update to refresh UI state without reload
     now = dt.now()
     return get_global_updates_fragment(
-        db, now.year, now.month, toast_msg="Installment removed."
+        db, now.year, now.month, toast_msg="Installment removed.", user_id=user.id
     )
 
 
-# ==========================================
-# 🔍 DATA HELPERS (For HTMX Selects)
-# ==========================================
-
-
 @router.get("/options/cards")
-async def get_card_options(db: Session = Depends(get_db)):
-    cards = db.query(Card).order_by(Card.name).all()
+async def get_card_options(request: Request, db: Session = Depends(get_db)):
+    user = request.state.user
+    cards = db.query(Card).filter(Card.owner_id == user.id).order_by(Card.name).all()
     return HTMLResponse(
         "".join([f'<option value="{c.id}">{c.name}</option>' for c in cards])
     )
 
 
-from fastapi import APIRouter, Depends, Form, Request
-from sqlalchemy.orm import Session
-from fastapi.responses import RedirectResponse
-from datetime import datetime as dt
-from app.models.installment import Installment
-
-
 @router.post("/edit/{installment_id}")
 async def update_installment(
+    request: Request,
     installment_id: int,
     description: str = Form(..., alias="item_name"),
     card_id: int = Form(...),
@@ -191,16 +175,16 @@ async def update_installment(
     payee_id: int = Form(...),
     total_amount: float = Form(...),
     months: int = Form(...),
-    interest_rate: float = Form(0.0),  # Flat interest amount
+    interest_rate: float = Form(0.0),
     start_date_str: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    inst = db.query(Installment).filter(Installment.id == installment_id).first()
+    user = request.state.user
+    inst = db.query(Installment).filter(Installment.id == installment_id, Installment.owner_id == user.id).first()
 
     if not inst:
         return RedirectResponse(url="/installments/?error=not_found", status_code=303)
 
-    # 1. Update Info
     inst.description = description
     inst.card_id = card_id
     inst.category_id = category_id
@@ -208,11 +192,7 @@ async def update_installment(
     inst.total_amount = total_amount
     inst.payment_terms = months
     inst.interest_rate = interest_rate
-
-    # 2. Recalculate Monthly Payment (Principal + Flat Interest) / Months
     inst.monthly_payment = (total_amount + interest_rate) / months
-
-    # 3. Update Date (Expects YYYY-MM)
     inst.start_date = dt.strptime(start_date_str, "%Y-%m").date()
 
     db.commit()
@@ -220,9 +200,9 @@ async def update_installment(
 
 
 @router.post("/delete/{installment_id}")
-async def delete_installment(installment_id: int, db: Session = Depends(get_db)):
-    # Fetch the installment record
-    inst = db.query(Installment).filter(Installment.id == installment_id).first()
+async def delete_installment_redirect(request: Request, installment_id: int, db: Session = Depends(get_db)):
+    user = request.state.user
+    inst = db.query(Installment).filter(Installment.id == installment_id, Installment.owner_id == user.id).first()
 
     if not inst:
         return RedirectResponse(url="/installments/?error=not_found", status_code=303)

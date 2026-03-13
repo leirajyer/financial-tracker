@@ -5,6 +5,7 @@ from .category import Category
 from .payee import Payee
 from .installment import Installment
 from .cashflow import CashFlow
+from .user import User
 
 __all__ = [
     "Base",
@@ -14,4 +15,5 @@ __all__ = [
     "Payee",
     "Installment",
     "CashFlow",
+    "User",
 ]
