@@ -21,6 +21,7 @@ from app.routes import (
     settings_router,
     cashflow_router,
     auth_router,
+    reports_router,
 )
 
 from starlette.middleware.sessions import SessionMiddleware
@@ -81,6 +82,7 @@ app.include_router(forecast_router)
 app.include_router(settings_router)
 app.include_router(cashflow_router)
 app.include_router(auth_router)
+app.include_router(reports_router)
 
 
 @app.get("/")

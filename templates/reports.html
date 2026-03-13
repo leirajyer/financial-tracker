@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="w-full mx-auto space-y-8">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Reports</h1>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
+                {% if month_label %}{{ month_label }}{% else %}All Time{% endif %} · {{ transaction_count }} Transactions
+            </p>
+        </div>
+        <a href="/" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all">
+            ← Dashboard
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+        <form method="GET" action="/reports/" class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Month:</span>
+                <input type="month" name="period" value="{{ filter_period or '' }}"
+                    onchange="this.form.submit()"
+                    class="bg-slate-50 border-none rounded-xl text-xs font-bold p-2 focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Type:</span>
+                <select name="type" onchange="this.form.submit()"
+                    class="bg-slate-50 border-none rounded-xl text-xs font-bold p-2 pr-8 focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Types</option>
+                    <option value="income" {% if filter_type == 'income' %}selected{% endif %}>Income</option>
+                    <option value="expense" {% if filter_type == 'expense' %}selected{% endif %}>Expense</option>
+                </select>
+            </div>
+            {% if filter_period or filter_type %}
+            <a href="/reports/" class="ml-auto text-[10px] font-black text-rose-500 uppercase hover:text-rose-600 transition-colors">
+                ✕ Clear
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Summary Bar -->
+    <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row justify-around items-center gap-6 md:gap-0">
+        <div class="flex flex-col items-center md:items-start flex-1">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Income</p>
+            <p class="text-xl font-black text-emerald-500 tracking-tighter">₱{{ "{:,.2f}".format(total_income) }}</p>
+        </div>
+        <div class="hidden md:block w-px h-8 bg-slate-100 mx-8"></div>
+        <div class="flex flex-col items-center md:items-start flex-1">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Expenses</p>
+            <p class="text-xl font-black text-rose-500 tracking-tighter">₱{{ "{:,.2f}".format(total_expense) }}</p>
+        </div>
+        <div class="hidden md:block w-px h-8 bg-slate-100 mx-8"></div>
+        <div class="flex flex-col items-center md:items-start flex-1">
+            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Net Balance</p>
+            <p class="text-xl font-black {% if net_balance >= 0 %}text-indigo-600{% else %}text-rose-600{% endif %} tracking-tighter">
+                ₱{{ "{:,.2f}".format(net_balance) }}
+            </p>
+        </div>
+    </div>
+
+    {% if breakdown %}
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+
+        <!-- Pie Chart -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 self-start">Spending by Category</p>
+            <div class="relative w-64 h-64">
+                <canvas id="categoryPieChart"></canvas>
+                <!-- Center Label -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</span>
+                    <span class="text-xl font-black text-slate-800 tracking-tighter">₱{{ "{:,.0f}".format(grand_total) }}</span>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="mt-6 w-full space-y-2">
+                {% for item in breakdown %}
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-xl shrink-0" style="background-color: {{ item.color }}"></div>
+                        <span class="text-xs font-bold text-slate-600 truncate max-w-[140px]">{{ item.name }}</span>
+                    </div>
+                    <span class="text-xs font-black text-slate-500">{{ item.percentage }}%</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Breakdown Table -->
+        <div class="lg:col-span-3 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Category Breakdown</p>
+            </div>
+            <div class="divide-y divide-slate-50">
+                {% for item in breakdown %}
+                <div class="px-6 py-4 hover:bg-slate-50/50 transition-all">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-3 h-3 rounded-xl shrink-0" style="background-color: {{ item.color }}"></div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-black text-slate-800 truncate">{{ item.name }}</p>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase">{{ item.count }} transaction{% if item.count != 1 %}s{% endif %}</p>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <p class="text-sm font-black text-slate-800 tracking-tighter">₱{{ "{:,.2f}".format(item.total) }}</p>
+                            <div class="flex items-center justify-end gap-2 mt-1">
+                                <div class="w-16 h-1 bg-slate-100 rounded-xl overflow-hidden">
+                                    <div class="h-full rounded-xl transition-all duration-700"
+                                        style="width: {{ item.percentage }}%; background-color: {{ item.color }}"></div>
+                                </div>
+                                <span class="text-[10px] font-black text-slate-400">{{ item.percentage }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm py-20 text-center">
+        <div class="text-4xl mb-4">📊</div>
+        <p class="text-xs font-black text-slate-300 uppercase tracking-widest">No transactions found for this period</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const ctx = document.getElementById('categoryPieChart');
+    if (ctx) {
+        const data = {
+            labels: [{% for item in breakdown %}"{{ item.name }}"{% if not loop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for item in breakdown %}{{ item.total }}{% if not loop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [{% for item in breakdown %}"{{ item.color }}"{% if not loop.last %},{% endif %}{% endfor %}],
+                borderWidth: 3,
+                borderColor: '#ffffff',
+                hoverBorderWidth: 4,
+                hoverOffset: 6,
+            }]
+        };
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '72%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleColor: '#94a3b8',
+                        bodyColor: '#f1f5f9',
+                        titleFont: { size: 10, weight: 'bold', family: 'monospace' },
+                        bodyFont: { size: 13, weight: 'bold' },
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: function(ctx) {
+                                const val = ctx.raw;
+                                const pct = (val / {{ grand_total }} * 100).toFixed(1);
+                                return ` ₱${val.toLocaleString('en-PH', {minimumFractionDigits: 2})}  (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    animateRotate: true,
+                    duration: 900,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
