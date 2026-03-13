@@ -182,5 +182,11 @@
             }
         }
     }
+    // Auto-open tab from URL hash (e.g. /settings/#cards)
+    const hash = window.location.hash.replace('#', '');
+    const validTabs = ['cards', 'payees', 'categories'];
+    if (validTabs.includes(hash)) {
+        showSection(hash);
+    }
 </script>
 {% endblock %}
