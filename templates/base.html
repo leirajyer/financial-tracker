@@ -123,9 +123,11 @@
     {% endblock %}
   </main>
 
-  <footer class="bg-white border-t border-slate-200 p-6 mt-12 w-full">
-    <div class="w-full max-w-[1600px] mx-auto text-center text-slate-400 text-xs">
-      &copy; 2026 Salapi - Fluid Build
+   <footer class="bg-white border-t border-slate-200 p-6 mt-12 w-full">
+    <div class="w-full max-w-[1600px] mx-auto text-center text-slate-400 text-xs flex flex-col md:flex-row justify-center items-center gap-2">
+      <span>&copy; 2026 Salapi - Fluid Build</span>
+      <span class="hidden md:inline text-slate-200">|</span>
+      <span class="font-mono bg-slate-50 px-2 py-0.5 rounded border border-slate-100 text-[10px]">v{{ app_version }}</span>
     </div>
   </footer>
   <div id="toast-container"></div>

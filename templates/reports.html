@@ -1,189 +1,430 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="w-full mx-auto space-y-8">
-
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div class="w-full mx-auto space-y-10">
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Reports</h1>
-            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                {% if month_label %}{{ month_label }}{% else %}All Time{% endif %} · {{ transaction_count }} Transactions
-            </p>
+            <h2 class="text-3xl font-black text-slate-800 tracking-tight">System Reports</h2>
+            <p class="text-slate-500 text-sm font-medium">Analyze your spending, cash flow, and installments.</p>
         </div>
-        <a href="/" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-all">
-            ← Dashboard
+        <a href="/"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all">
+            ← Back to Dashboard
         </a>
-    </div>
+    </header>
 
-    <!-- Filters -->
-    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-        <form method="GET" action="/reports/" class="flex flex-wrap items-center gap-4">
-            <div class="flex items-center gap-2">
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Month:</span>
-                <input type="month" name="period" value="{{ filter_period or '' }}"
-                    onchange="this.form.submit()"
-                    class="bg-slate-50 border-none rounded-xl text-xs font-bold p-2 focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Type:</span>
-                <select name="type" onchange="this.form.submit()"
-                    class="bg-slate-50 border-none rounded-xl text-xs font-bold p-2 pr-8 focus:ring-2 focus:ring-indigo-500">
-                    <option value="">All Types</option>
-                    <option value="income" {% if filter_type == 'income' %}selected{% endif %}>Income</option>
-                    <option value="expense" {% if filter_type == 'expense' %}selected{% endif %}>Expense</option>
-                </select>
-            </div>
-            {% if filter_period or filter_type %}
-            <a href="/reports/" class="ml-auto text-[10px] font-black text-rose-500 uppercase hover:text-rose-600 transition-colors">
-                ✕ Clear
-            </a>
-            {% endif %}
-        </form>
-    </div>
+    <div class="flex flex-col md:flex-row gap-8">
+        <!-- Sidebar -->
+        <aside class="w-full md:w-64 shrink-0 space-y-2">
+            <button onclick="showSection('overview')" id="tab-overview" class="w-full text-left px-5 py-4 bg-blue-50 text-blue-700 font-bold rounded-xl transition-all tab-btn border border-blue-100 shadow-sm">
+                <span class="mr-3 text-lg">📊</span> Overview
+            </button>
+            <button onclick="showSection('flowchart')" id="tab-flowchart" class="w-full text-left px-5 py-4 bg-white text-slate-600 hover:bg-slate-50 font-bold rounded-xl transition-all tab-btn border border-transparent">
+                <span class="mr-3 text-lg">📈</span> Flowchart
+            </button>
+            <button onclick="showSection('installments')" id="tab-installments" class="w-full text-left px-5 py-4 bg-white text-slate-600 hover:bg-slate-50 font-bold rounded-xl transition-all tab-btn border border-transparent">
+                <span class="mr-3 text-lg">🗓️</span> Installments
+            </button>
+        </aside>
 
-    <!-- Summary Bar -->
-    <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row justify-around items-center gap-6 md:gap-0">
-        <div class="flex flex-col items-center md:items-start flex-1">
-            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Income</p>
-            <p class="text-xl font-black text-emerald-500 tracking-tighter">₱{{ "{:,.2f}".format(total_income) }}</p>
-        </div>
-        <div class="hidden md:block w-px h-8 bg-slate-100 mx-8"></div>
-        <div class="flex flex-col items-center md:items-start flex-1">
-            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Expenses</p>
-            <p class="text-xl font-black text-rose-500 tracking-tighter">₱{{ "{:,.2f}".format(total_expense) }}</p>
-        </div>
-        <div class="hidden md:block w-px h-8 bg-slate-100 mx-8"></div>
-        <div class="flex flex-col items-center md:items-start flex-1">
-            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Net Balance</p>
-            <p class="text-xl font-black {% if net_balance >= 0 %}text-indigo-600{% else %}text-rose-600{% endif %} tracking-tighter">
-                ₱{{ "{:,.2f}".format(net_balance) }}
-            </p>
-        </div>
-    </div>
+        <!-- Main Content area -->
+        <div class="flex-1 bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-100 min-h-[600px]">
+            
+            <!-- Overview Section -->
+            <div id="section-overview" class="reports-section space-y-8 animate-fade-in">
+                <header>
+                    <h3 class="font-black text-slate-800 text-2xl flex items-center gap-3">
+                        <span class="p-3 bg-blue-50 rounded-xl text-xl">📊</span>
+                        Category Overview
+                    </h3>
+                    <p class="text-xs text-slate-400 font-bold mt-2 uppercase tracking-widest">
+                        {% if month_label %}{{ month_label }}{% else %}All Time{% endif %} · {{ transaction_count }} Transactions
+                    </p>
+                </header>
 
-    {% if breakdown %}
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-
-        <!-- Pie Chart -->
-        <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 self-start">Spending by Category</p>
-            <div class="relative w-64 h-64">
-                <canvas id="categoryPieChart"></canvas>
-                <!-- Center Label -->
-                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</span>
-                    <span class="text-xl font-black text-slate-800 tracking-tighter">₱{{ "{:,.0f}".format(grand_total) }}</span>
+                <!-- Filters -->
+                <div class="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                    <form method="GET" action="/reports/" class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Month:</span>
+                            <input type="month" name="period" value="{{ filter_period or '' }}"
+                                onchange="this.form.submit()"
+                                class="bg-white border-none rounded-xl text-xs font-bold p-2 focus:ring-2 focus:ring-blue-500 shadow-sm">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Type:</span>
+                            <select name="type" onchange="this.form.submit()"
+                                class="bg-white border-none rounded-xl text-xs font-bold p-2 pr-8 focus:ring-2 focus:ring-blue-500 shadow-sm">
+                                <option value="">All Types</option>
+                                <option value="income" {% if filter_type == 'income' %}selected{% endif %}>Income</option>
+                                <option value="expense" {% if filter_type == 'expense' %}selected{% endif %}>Expense</option>
+                            </select>
+                        </div>
+                        {% if filter_period or filter_type %}
+                        <a href="/reports/" class="ml-auto text-[10px] font-black text-rose-500 uppercase hover:text-rose-600 transition-colors">
+                            ✕ Clear
+                        </a>
+                        {% endif %}
+                    </form>
                 </div>
-            </div>
 
-            <!-- Legend -->
-            <div class="mt-6 w-full space-y-2">
-                {% for item in breakdown %}
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-2.5 h-2.5 rounded-xl shrink-0" style="background-color: {{ item.color }}"></div>
-                        <span class="text-xs font-bold text-slate-600 truncate max-w-[140px]">{{ item.name }}</span>
+                <!-- Summary Bar -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-50/50 p-6 rounded-xl border border-slate-100 flex flex-col items-center md:items-start">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Income</p>
+                        <p class="text-2xl font-black text-emerald-500 tracking-tighter">₱{{ "{:,.2f}".format(total_income) }}</p>
                     </div>
-                    <span class="text-xs font-black text-slate-500">{{ item.percentage }}%</span>
+                    <div class="bg-slate-50/50 p-6 rounded-xl border border-slate-100 flex flex-col items-center md:items-start">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Expenses</p>
+                        <p class="text-2xl font-black text-rose-500 tracking-tighter">₱{{ "{:,.2f}".format(total_expense) }}</p>
+                    </div>
+                    <div class="bg-slate-50/50 p-6 rounded-xl border border-slate-100 flex flex-col items-center md:items-start">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Net Balance</p>
+                        <p class="text-2xl font-black {% if net_balance >= 0 %}text-blue-600{% else %}text-rose-600{% endif %} tracking-tighter">
+                            ₱{{ "{:,.2f}".format(net_balance) }}
+                        </p>
+                    </div>
                 </div>
-                {% endfor %}
-            </div>
-        </div>
 
-        <!-- Breakdown Table -->
-        <div class="lg:col-span-3 bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Category Breakdown</p>
-            </div>
-            <div class="divide-y divide-slate-50">
-                {% for item in breakdown %}
-                <div class="px-6 py-4 hover:bg-slate-50/50 transition-all">
-                    <div class="flex items-center justify-between gap-4">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="w-3 h-3 rounded-xl shrink-0" style="background-color: {{ item.color }}"></div>
-                            <div class="min-w-0">
-                                <p class="text-sm font-black text-slate-800 truncate">{{ item.name }}</p>
-                                <p class="text-[10px] font-bold text-slate-400 uppercase">{{ item.count }} transaction{% if item.count != 1 %}s{% endif %}</p>
+                {% if breakdown %}
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Pie Chart -->
+                    <div class="flex flex-col items-center p-6 bg-slate-50/50 rounded-2xl border border-slate-100">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 self-start">Spending Breakdown</p>
+                        <div class="relative w-full max-w-[280px] aspect-square">
+                            <canvas id="categoryPieChart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-[10px] font-black text-slate-400 uppercase">Total</span>
+                                <span class="text-xl font-black text-slate-800 tracking-tighter">₱{{ "{:,.0f}".format(grand_total) }}</span>
                             </div>
                         </div>
-                        <div class="text-right shrink-0">
-                            <p class="text-sm font-black text-slate-800 tracking-tighter">₱{{ "{:,.2f}".format(item.total) }}</p>
-                            <div class="flex items-center justify-end gap-2 mt-1">
-                                <div class="w-16 h-1 bg-slate-100 rounded-xl overflow-hidden">
-                                    <div class="h-full rounded-xl transition-all duration-700"
-                                        style="width: {{ item.percentage }}%; background-color: {{ item.color }}"></div>
+                    </div>
+
+                    <!-- Breakdown List -->
+                    <div class="space-y-3">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Top Categories</p>
+                        {% for item in breakdown %}
+                        <div class="group p-4 bg-white border border-slate-100 rounded-xl hover:shadow-md transition-all">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-3 h-3 rounded-full" style="background-color: {{ item.color }}"></div>
+                                    <span class="text-sm font-bold text-slate-700">{{ item.name }}</span>
                                 </div>
-                                <span class="text-[10px] font-black text-slate-400">{{ item.percentage }}%</span>
+                                <span class="text-sm font-black text-slate-800">₱{{ "{:,.2f}".format(item.total) }}</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full transition-all duration-1000" style="width: {{ item.percentage }}%; background-color: {{ item.color }}"></div>
+                                </div>
+                                <span class="text-[10px] font-black text-slate-400 w-8 text-right">{{ item.percentage }}%</span>
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
                 </div>
-                {% endfor %}
+                {% else %}
+                <div class="py-20 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                    <span class="text-4xl mb-4 block">📊</span>
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest">No data available for this period</p>
+                </div>
+                {% endif %}
             </div>
+
+            <!-- Flowchart Section -->
+            <div id="section-flowchart" class="reports-section space-y-8 animate-fade-in hidden">
+                <header>
+                    <h3 class="font-black text-slate-800 text-2xl flex items-center gap-3">
+                        <span class="p-3 bg-emerald-50 rounded-xl text-xl">📈</span>
+                        Cash Flow History
+                    </h3>
+                    <p class="text-xs text-slate-400 font-bold mt-2 uppercase tracking-widest">Income vs Expenses (Last 12 Months)</p>
+                </header>
+
+                <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                    <div class="h-[400px] w-full">
+                        <canvas id="flowChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-6 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                        <h4 class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-4">Cash Flow Insights</h4>
+                        <p class="text-sm text-slate-600 font-medium leading-relaxed">
+                            This chart tracks your financial movement over the last year. The bars represent total incoming and outgoing funds each month, helping you identify seasonal trends.
+                        </p>
+                    </div>
+                    <div class="p-6 bg-blue-50/50 border border-blue-100 rounded-2xl">
+                        <h4 class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4">Savings Rate</h4>
+                        <p class="text-sm text-slate-600 font-medium leading-relaxed">
+                            Consistent gaps between income (green) and expenses (red) indicate healthy savings. Aim for the green bar to be consistently higher than the red bar.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Installments Section -->
+            <div id="section-installments" class="reports-section space-y-8 animate-fade-in hidden">
+                <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="font-black text-slate-800 text-2xl flex items-center gap-3">
+                            <span class="p-3 bg-purple-50 rounded-xl text-xl">🗓️</span>
+                            Installment Commitments
+                        </h3>
+                        <p class="text-xs text-slate-400 font-bold mt-2 uppercase tracking-widest">Yearly Debt Obligations for {{ selected_inst_year }}</p>
+                    </div>
+                    
+                    <form id="instYearForm" method="GET" action="/reports/" class="flex items-center gap-2">
+                        <input type="hidden" name="section" value="installments">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Year:</span>
+                        <select name="inst_year" onchange="this.form.submit()"
+                            class="bg-slate-100 border-none rounded-xl text-xs font-bold p-2 pr-8 focus:ring-2 focus:ring-purple-500 shadow-sm transition-all hover:bg-slate-200">
+                            {% for yr in available_years %}
+                            <option value="{{ yr }}" {% if yr == selected_inst_year %}selected{% endif %}>{{ yr }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </header>
+
+                <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                    <div class="h-[400px] w-full">
+                        <canvas id="installmentChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
+                    <div class="px-6 py-4 border-b border-slate-50 bg-slate-50/30">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Monthly Debt Breakdown</h4>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 border-collapse">
+                        {% for data in installment_report_data %}
+                        <div class="p-6 border border-slate-50 flex flex-col items-center transition-colors hover:bg-slate-50/50">
+                            <span class="text-[9px] font-black text-slate-400 uppercase mb-2">{{ data.month[:3] }}</span>
+                            <span class="text-sm font-black text-slate-800">₱{{ "{:,.0f}".format(data.total) }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
         </div>
-
     </div>
-    {% else %}
-    <div class="bg-white rounded-xl border border-slate-100 shadow-sm py-20 text-center">
-        <div class="text-4xl mb-4">📊</div>
-        <p class="text-xs font-black text-slate-300 uppercase tracking-widest">No transactions found for this period</p>
-    </div>
-    {% endif %}
-
 </div>
+
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.3s ease-out forwards;
+    }
+    canvas {
+        max-width: 100% !important;
+    }
+</style>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-    const ctx = document.getElementById('categoryPieChart');
-    if (ctx) {
-        const data = {
-            labels: [{% for item in breakdown %}"{{ item.name }}"{% if not loop.last %},{% endif %}{% endfor %}],
-            datasets: [{
-                data: [{% for item in breakdown %}{{ item.total }}{% if not loop.last %},{% endif %}{% endfor %}],
-                backgroundColor: [{% for item in breakdown %}"{{ item.color }}"{% if not loop.last %},{% endif %}{% endfor %}],
-                borderWidth: 3,
-                borderColor: '#ffffff',
-                hoverBorderWidth: 4,
-                hoverOffset: 6,
-            }]
-        };
 
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: data,
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                cutout: '72%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#0f172a',
-                        titleColor: '#94a3b8',
-                        bodyColor: '#f1f5f9',
-                        titleFont: { size: 10, weight: 'bold', family: 'monospace' },
-                        bodyFont: { size: 13, weight: 'bold' },
-                        padding: 12,
-                        cornerRadius: 10,
-                        callbacks: {
-                            label: function(ctx) {
-                                const val = ctx.raw;
-                                const pct = (val / {{ grand_total }} * 100).toFixed(1);
-                                return ` ₱${val.toLocaleString('en-PH', {minimumFractionDigits: 2})}  (${pct}%)`;
+<script>
+    function showSection(sectionName) {
+        // Update URL hash
+        window.location.hash = sectionName;
+        
+        // Hide all sections
+        const sections = document.querySelectorAll('.reports-section');
+        sections.forEach(sec => sec.classList.add('hidden'));
+
+        // Reset all tabs
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => {
+            tab.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-100', 'shadow-sm', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-100', 'bg-purple-50', 'text-purple-700', 'border-purple-100');
+            tab.classList.add('bg-white', 'text-slate-600', 'border-transparent');
+        });
+
+        // Show the target section
+        const targetSection = document.getElementById('section-' + sectionName);
+        if (targetSection) targetSection.classList.remove('hidden');
+
+        // Style the active tab
+        const activeTab = document.getElementById('tab-' + sectionName);
+        if (activeTab) {
+            activeTab.classList.remove('bg-white', 'text-slate-600', 'border-transparent');
+            
+            if (sectionName === 'overview') {
+                activeTab.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-100', 'shadow-sm');
+            } else if (sectionName === 'flowchart') {
+                activeTab.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-100', 'shadow-sm');
+            } else if (sectionName === 'installments') {
+                activeTab.classList.add('bg-purple-50', 'text-purple-700', 'border-purple-100', 'shadow-sm');
+            }
+        }
+    }
+
+    // Initialize Charts
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. Category Pie Chart ---
+        const pieCtx = document.getElementById('categoryPieChart');
+        if (pieCtx) {
+            new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [{% for item in breakdown %}"{{ item.name }}"{% if not loop.last %},{% endif %}{% endfor %}],
+                    datasets: [{
+                        data: [{% for item in breakdown %}{{ item.total }}{% if not loop.last %},{% endif %}{% endfor %}],
+                        backgroundColor: [{% for item in breakdown %}"{{ item.color }}"{% if not loop.last %},{% endif %}{% endfor %}],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            padding: 12,
+                            cornerRadius: 12,
+                            titleFont: { size: 11, weight: 'bold' },
+                            bodyFont: { size: 14, weight: '900' },
+                            callbacks: {
+                                label: (ctx) => ` ₱${ctx.raw.toLocaleString()}`
                             }
                         }
                     }
-                },
-                animation: {
-                    animateRotate: true,
-                    duration: 900,
-                    easing: 'easeInOutQuart'
                 }
-            }
-        });
-    }
+            });
+        }
+
+        // --- 2. Flow Chart (Income vs Expense) ---
+        const flowCtx = document.getElementById('flowChart');
+        if (flowCtx) {
+            new Chart(flowCtx, {
+                type: 'bar',
+                data: {
+                    labels: [{% for d in flowchart_data %}"{{ d.label }}"{% if not loop.last %},{% endif %}{% endfor %}],
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: [{% for d in flowchart_data %}{{ d.income }}{% if not loop.last %},{% endif %}{% endfor %}],
+                            backgroundColor: '#10b981',
+                            borderRadius: 6,
+                            borderSkipped: false,
+                        },
+                        {
+                            label: 'Expense',
+                            data: [{% for d in flowchart_data %}{{ d.expense }}{% if not loop.last %},{% endif %}{% endfor %}],
+                            backgroundColor: '#f43f5e',
+                            borderRadius: 6,
+                            borderSkipped: false,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { weight: 'bold', size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            padding: 12,
+                            cornerRadius: 12
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 } } },
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: '#f1f5f9' },
+                            ticks: { 
+                                font: { weight: 'bold', size: 10 },
+                                callback: (val) => '₱' + val.toLocaleString()
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 3. Installment Chart (Yearly) ---
+        const instCtx = document.getElementById('installmentChart');
+        if (instCtx) {
+            new Chart(instCtx, {
+                type: 'line',
+                data: {
+                    labels: [{% for d in installment_report_data %}"{{ d.month[:3] }}"{% if not loop.last %},{% endif %}{% endfor %}],
+                    datasets: [{
+                        label: 'Monthly Payment',
+                        data: [{% for d in installment_report_data %}{{ d.total }}{% if not loop.last %},{% endif %}{% endfor %}],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: (context) => {
+                            const chart = context.chart;
+                            const {ctx, chartArea} = chart;
+                            if (!chartArea) return null;
+                            const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                            gradient.addColorStop(0, 'rgba(139, 92, 246, 0)');
+                            gradient.addColorStop(1, 'rgba(139, 92, 246, 0.1)');
+                            return gradient;
+                        },
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderWidth: 3,
+                        pointHoverRadius: 6,
+                        pointHoverBorderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            padding: 12,
+                            cornerRadius: 12
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 } } },
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { color: '#f1f5f9' },
+                            ticks: { 
+                                font: { weight: 'bold', size: 10 },
+                                callback: (val) => '₱' + val.toLocaleString()
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Auto-open tab from URL hash or query param
+        const urlParams = new URLSearchParams(window.location.search);
+        const sectionParam = urlParams.get('section');
+        const hash = window.location.hash.replace('#', '');
+        
+        const validTabs = ['overview', 'flowchart', 'installments'];
+        if (validTabs.includes(sectionParam)) {
+            showSection(sectionParam);
+        } else if (validTabs.includes(hash)) {
+            showSection(hash);
+        } else {
+            showSection('overview');
+        }
+    });
 </script>
 {% endblock %}

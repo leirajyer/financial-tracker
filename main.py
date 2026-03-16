@@ -62,6 +62,7 @@ async def add_user_to_request(request: Request, call_next):
 
 # Standardize templates to always include current_user
 templates.env.globals["current_user"] = None # Placeholder
+templates.env.globals["app_version"] = "1.2.4"
 
 
 from app.seed import seed_db

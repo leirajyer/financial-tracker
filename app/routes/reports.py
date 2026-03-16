@@ -5,9 +5,11 @@ from typing import Optional
 from datetime import datetime as dt
 
 from app.database import get_db
-from app.models import CashFlow, Category
+from app.models import CashFlow, Category, Installment
 from app.services.debt import calculate_monthly_totals
 from app.core.ui import render_template
+import calendar
+from datetime import date
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -18,6 +20,7 @@ async def reports_page(
     db: Session = Depends(get_db),
     period: Optional[str] = Query(None),  # YYYY-MM
     tx_type: Optional[str] = Query(None, alias="type"),
+    inst_year: Optional[int] = Query(None),
 ):
     user = request.state.user
     from sqlalchemy import extract
@@ -78,6 +81,50 @@ async def reports_page(
     total_expense = sum(t.amount for t in transactions if t.type == "expense")
     net_balance = total_income - total_expense
 
+    # NEW: Flowchart data (last 12 months)
+    from sqlalchemy import func
+    flowchart_data = []
+    today = date.today()
+    for i in range(11, -1, -1):
+        m = (today.month - i - 1) % 12 + 1
+        y = today.year + (today.month - i - 1) // 12
+        
+        month_income = db.query(func.sum(CashFlow.amount)).filter(
+            CashFlow.owner_id == user.id,
+            CashFlow.type == "income",
+            extract("year", CashFlow.date) == y,
+            extract("month", CashFlow.date) == m,
+        ).scalar() or 0.0
+        
+        month_expense = db.query(func.sum(CashFlow.amount)).filter(
+            CashFlow.owner_id == user.id,
+            CashFlow.type == "expense",
+            extract("year", CashFlow.date) == y,
+            extract("month", CashFlow.date) == m,
+        ).scalar() or 0.0
+        
+        flowchart_data.append({
+            "label": dt(y, m, 1).strftime("%b %y"),
+            "income": round(month_income, 2),
+            "expense": round(month_expense, 2)
+        })
+
+    # NEW: Installment Report (Yearly filter)
+    selected_inst_year = inst_year or today.year
+    installment_report_data = []
+    installments = db.query(Installment).filter(Installment.owner_id == user.id).all()
+    
+    for month in range(1, 13):
+        target_date = date(selected_inst_year, month, 1)
+        monthly_total = sum(
+            item.monthly_payment for item in installments
+            if item.start_date <= target_date <= item.end_date
+        )
+        installment_report_data.append({
+            "month": calendar.month_name[month],
+            "total": round(monthly_total, 2)
+        })
+
     stats = calculate_monthly_totals(db, user_id=user.id)
 
     # Month name for display
@@ -101,6 +148,10 @@ async def reports_page(
             "filter_type": tx_type,
             "month_label": month_label,
             "transaction_count": len(transactions),
+            "flowchart_data": flowchart_data,
+            "installment_report_data": installment_report_data,
+            "selected_inst_year": selected_inst_year,
+            "available_years": range(today.year - 2, today.year + 3), # Simple year range
             **stats,
         },
     )
