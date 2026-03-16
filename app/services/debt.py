@@ -64,11 +64,8 @@ def calculate_monthly_totals(
             item_is_paid = paid_status_map.get(c_id)
             
             if item_is_paid is None:
-                # DEFAULT LOGIC:
-                # 1. Start Date < Current Month -> PAID (Legacy)
-                # 2. Start Date == Current Month -> UNPAID (New)
-                # 3. Start Date > Current Month -> UNPAID (Future)
-                item_is_paid = (item_start_norm < target_date)
+                # DEFAULT LOGIC: All active installments are PENDING until manually marked
+                item_is_paid = False
             
             # Carry the status for the templates
             item.is_paid_current = item_is_paid
