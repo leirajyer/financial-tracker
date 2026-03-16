@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import Optional
 from datetime import datetime as dt
+import alembic.config
+import alembic.command
 
 # 1. Standardize your Base import (Use the one from your models package)
 from app.database import engine, get_db, SessionLocal
@@ -72,7 +74,15 @@ from app.seed import seed_db
 
 @app.on_event("startup")
 async def startup_event():
-    # Tables are now managed by Alembic migrations
+    # Auto-run migrations on startup
+    try:
+        print("🚀 Running migrations...")
+        alembic_cfg = alembic.config.Config("alembic.ini")
+        alembic.command.upgrade(alembic_cfg, "head")
+        print("✅ Migrations applied successfully!")
+    except Exception as e:
+        print(f"⚠️ Migration Startup Warning: {e}")
+
     try:
         seed_db()
     except Exception as e:
