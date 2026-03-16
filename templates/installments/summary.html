@@ -14,9 +14,14 @@
                     <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{{ inst.category.name if inst.category else 'General' }}</span>
                 </div>
             </div>
-            <div class="text-right">
+            <div class="text-right flex flex-col items-end">
                 <p class="text-xs font-black text-emerald-600">₱{{ "{:,.2f}".format(inst.monthly_payment) }}</p>
-                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Monthly</p>
+                {% set is_paid = paid_status_map.get(inst.card_id, False) if paid_status_map is defined else False %}
+                {% if is_paid %}
+                <span class="text-[7px] font-black bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-1">PAID</span>
+                {% else %}
+                <span class="text-[7px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-1">PENDING</span>
+                {% endif %}
             </div>
         </div>
 

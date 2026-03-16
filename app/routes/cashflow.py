@@ -100,6 +100,10 @@ async def show_all_cashflow(
 @router.get("/add")
 async def add_cashflow_form(request: Request, db: Session = Depends(get_db)):
     user = request.state.user
+    
+    from app.services.debt import calculate_monthly_totals
+    stats = calculate_monthly_totals(db, user_id=user.id)
+    
     categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
     current_date = date.today().strftime("%Y-%m-%d")
 
@@ -107,7 +111,7 @@ async def add_cashflow_form(request: Request, db: Session = Depends(get_db)):
     return render_template(
         "cashflow/form.html",
         request,
-        {"categories": categories, "today": current_date},
+        {"categories": categories, "today": current_date, **stats},
     )
 
 

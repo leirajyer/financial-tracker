@@ -46,6 +46,7 @@ async def list_all_installments(request: Request, db: Session = Depends(get_db))
             "cards": cards,
             "categories": categories,
             "payees": payees,
+            **stats
         },
     )
 
@@ -68,6 +69,9 @@ async def add_installment_form(request: Request, db: Session = Depends(get_db)):
         {"label": "60 Months (5 years)", "value": 60},
     ]
     from app.core.ui import render_template
+    from app.services.debt import calculate_monthly_totals
+    stats = calculate_monthly_totals(db, user_id=user.id)
+    
     return render_template(
         "installments/form.html",
         request,
@@ -77,6 +81,7 @@ async def add_installment_form(request: Request, db: Session = Depends(get_db)):
             "categories": categories,
             "payment_terms": payment_terms,
             "today_month": dt.now().strftime("%Y-%m"),
+            **stats
         },
     )
 

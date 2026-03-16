@@ -100,6 +100,7 @@ def calculate_monthly_totals(
         "pending_cards": pending_cards,
         "paid_cards": paid_cards,
         "items": active_items,
+        "paid_status_map": paid_status_map,
         "month_name": calendar.month_name[mo],
         "year": yr,
         "month": mo,
@@ -188,22 +189,16 @@ def get_global_updates_fragment(
         db, year, month, card_id=card_id, payee_id=payee_id, user_id=user_id
     )
     total_val = stats.get("total_burn", 0)
-
-    # Check if balance is zero or less
+    # Remaining Dues OOB updates
+    burn_display = f"₱{total_val:,.2f}"
     if total_val < 0.01:
-        burn_display = '<span class="text-emerald-400 font-black animate-pulse">FULLY PAID 🎉</span>'
-    else:
-        burn_display = f"₱{total_val:,.2f}"
+        burn_display = '<span class="text-emerald-400 font-bold animate-pulse">FULLY PAID 🎉</span>'
 
-    # 1. Remaining Value Fragment
     fragments = []
-    fragments.append(
-        f'<span id="nav-remaining-value" class="text-sm font-bold text-red-600 bg-white border border-slate-200 px-3 py-1 rounded-lg shadow-sm bg-red-100" hx-swap-oob="true">{burn_display}</span>'
-    )
-    
-    # NEW: Month Total OOB update
-    total_due_display = f"₱{stats.get('total_due', 0):,.2f}"
-    fragments.append(f'<span id="nav-monthly-total" hx-swap-oob="true">{total_due_display}</span>')
+    # Update Desktop Nav
+    fragments.append(f'<span id="nav-monthly-total" hx-swap-oob="true">{burn_display}</span>')
+    # Update Mobile Nav
+    fragments.append(f'<span id="nav-remaining-total-mobile" hx-swap-oob="true">{burn_display}</span>')
 
     # 2. Toast Fragment
     if toast_msg:

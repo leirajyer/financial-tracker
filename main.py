@@ -142,8 +142,8 @@ async def index(
         if loan.start_date <= target_dt <= loan.end_date:
             loan_total_monthly += loan.monthly_payment
 
-    # Aggregate Total Payment (Obligation = Scheduled Installments + Scheduled Loans + Regular Expenses)
-    aggregate_monthly_payment = cashflow_regular_expense_total + stats["total_due"] + loan_total_monthly
+    # Aggregate Remaining Payment (Remaining Dues = Unpaid Installments + Scheduled Loans + Regular Expenses)
+    aggregate_monthly_payment = cashflow_regular_expense_total + stats["total_burn"] + loan_total_monthly
     
     recent_cashflow = (
         db.query(CashFlow)

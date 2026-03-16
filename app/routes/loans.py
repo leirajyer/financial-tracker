@@ -26,7 +26,10 @@ async def list_loans(request: Request, db: Session = Depends(get_db)):
     total_monthly = sum(loan.monthly_payment for loan in loans)
     active_loans = [loan for loan in loans if loan.status == "active"]
     
-    categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id is None)).all()
+    categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
+    
+    from app.services.debt import calculate_monthly_totals
+    stats = calculate_monthly_totals(db, user_id=user.id)
 
     return render_template(
         "loans/list.html",
@@ -37,6 +40,7 @@ async def list_loans(request: Request, db: Session = Depends(get_db)):
             "total_monthly": total_monthly,
             "active_count": len(active_loans),
             "categories": categories,
+            **stats
         },
     )
 
@@ -44,6 +48,9 @@ async def list_loans(request: Request, db: Session = Depends(get_db)):
 async def add_loan_form(request: Request, db: Session = Depends(get_db)):
     user = request.state.user
     categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id is None)).all()
+    
+    from app.services.debt import calculate_monthly_totals
+    stats = calculate_monthly_totals(db, user_id=user.id)
     
     terms_options = [
         {"label": "1 Year", "value": 1},
@@ -60,6 +67,7 @@ async def add_loan_form(request: Request, db: Session = Depends(get_db)):
             "categories": categories,
             "terms_options": terms_options,
             "today": date.today().strftime("%Y-%m-%d"),
+            **stats
         },
     )
 

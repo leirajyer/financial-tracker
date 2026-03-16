@@ -123,8 +123,23 @@
         radio.addEventListener('change', function() {
             if (this.value === 'income') {
                 document.getElementById('card-selector-container').innerHTML = '';
+                // Optional: reset fields here too? 
+                const amountInput = document.querySelector('input[name="amount"]');
+                const descriptionInput = document.getElementById('transaction-description');
+                if (amountInput) amountInput.value = '';
+                if (descriptionInput) descriptionInput.value = '';
             }
         });
+    });
+
+    // Reset fields when the card selector is emptied (switched to non-credit-card category)
+    document.getElementById('card-selector-container').addEventListener('htmx:afterSwap', function(e) {
+        if (this.innerHTML.trim() === '') {
+            const amountInput = document.querySelector('input[name="amount"]');
+            const descriptionInput = document.getElementById('transaction-description');
+            if (amountInput) amountInput.value = '';
+            if (descriptionInput) descriptionInput.value = '';
+        }
     });
 </script>
 {% endblock %}

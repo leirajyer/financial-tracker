@@ -46,14 +46,12 @@
         </div>
 
         <!-- Mobile Month Total (Top) -->
-        <div class="md:hidden mb-10">
           <div class="nav-item translate-x-12 opacity-0">
-            <span class="text-[9px] text-indigo-500 font-black uppercase tracking-[0.2em] block mb-2">Month Total</span>
-            <span class="text-2xl font-mono font-bold text-indigo-200">
-              {% if total_due %}₱{{ "{:,.2f}".format(total_due) }}{% else %}₱0.00{% endif %}
+            <span class="text-[9px] text-indigo-500 font-black uppercase tracking-[0.2em] block mb-2">Remaining Dues</span>
+            <span id="nav-remaining-total-mobile" class="text-2xl font-mono font-bold text-indigo-200">
+              ₱{{ "{:,.2f}".format(total_burn if total_burn is defined else total_due if total_due is defined else 0) }}
             </span>
           </div>
-        </div>
         <div class="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 sm:gap-6 nav-links">
           <a href="/cashflow"
             class="nav-item whitespace-nowrap text-xs sm:text-sm font-bold hover:text-emerald-300 transition-colors px-4 py-2 md:px-2 md:py-1 rounded-xl hover:bg-white/10 uppercase tracking-widest w-full md:w-auto text-center translate-x-12 opacity-0 md:translate-x-0 md:opacity-100">Cashflow</a>
@@ -82,9 +80,9 @@
             
             <!-- Desktop Month Total -->
             <div class="hidden md:flex flex-col items-end pr-4 border-r border-indigo-800">
-              <span class="text-[9px] text-indigo-300 uppercase font-black tracking-widest leading-none">Month Total</span>
+              <span class="text-[9px] text-indigo-300 uppercase font-black tracking-widest leading-none">Remaining Dues</span>
               <span id="nav-monthly-total" class="text-sm font-mono font-bold text-indigo-200">
-                {% if total_due %}₱{{ "{:,.2f}".format(total_due) }}{% else %}₱0.00{% endif %}
+                ₱{{ "{:,.2f}".format(total_burn if total_burn is defined else total_due if total_due is defined else 0) }}
               </span>
             </div>
 
