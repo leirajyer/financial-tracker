@@ -3,15 +3,20 @@
     {% for inst in installments %}
     {% set progress = inst.get_progress() %}
 
-    <div class="p-4 rounded-xl bg-slate-50/50 border border-slate-100/50">
+    <div class="p-4 rounded-xl bg-white border border-slate-100 shadow-sm transition-all hover:shadow-md" style="border-left: 4px solid {{ inst.card.color if inst.card else '#e2e8f0' }};">
         <div class="flex justify-between items-start mb-3">
             <div>
                 <p class="text-xs font-black text-slate-800 leading-none">{{ inst.payee.name }}</p>
-                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{{ inst.card.name }}</p>
+                <div class="flex items-center gap-2 mt-1.5">
+                    <span class="text-[8px] font-black px-1.5 py-0.5 rounded text-white tracking-widest uppercase" style="background-color: {{ inst.card.color if inst.card else '#94a3b8' }};">
+                        {{ inst.card.name if inst.card else 'N/A' }}
+                    </span>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{{ inst.category.name if inst.category else 'General' }}</span>
+                </div>
             </div>
             <div class="text-right">
-                <p class="text-xs font-black text-indigo-600">₱{{ "{:,.2f}".format(inst.monthly_payment) }}</p>
-                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Monthly</p>
+                <p class="text-xs font-black text-emerald-600">₱{{ "{:,.2f}".format(inst.monthly_payment) }}</p>
+                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Monthly</p>
             </div>
         </div>
 

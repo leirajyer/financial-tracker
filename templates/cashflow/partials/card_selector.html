@@ -1,0 +1,27 @@
+{% if pending_cards %}
+<div class="animate-in fade-in slide-in-from-top-2 duration-300">
+    <label class="block text-[10px] font-black text-indigo-400 uppercase mb-3 tracking-widest">Select Credit Card to Mark as Paid</label>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {% for name, data in pending_cards.items() %}
+        <label class="relative cursor-pointer group">
+            <input type="radio" name="card_id" value="{{ data.id }}" class="peer sr-only" required>
+            <div class="p-4 rounded-xl border border-slate-100 bg-white hover:border-indigo-200 transition-all peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-500/20 shadow-sm group-hover:shadow-md">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-black text-slate-800">{{ name }}</p>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase mt-1">Pending Balance</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs font-black text-rose-500">₱{{ "{:,.2f}".format(data.total) }}</p>
+                    </div>
+                </div>
+            </div>
+        </label>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-center animate-in fade-in duration-300">
+    <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest">All cards are already marked as paid for this month! ✅</p>
+</div>
+{% endif %}

@@ -105,6 +105,16 @@ async def delete_card(request: Request, id: int, db: Session = Depends(get_db)):
 async def delete_category(request: Request, id: int, db: Session = Depends(get_db)):
     user = request.state.user
     cat = db.query(Category).filter(Category.id == id, Category.owner_id == user.id).first()
+    
+    # Check if category is protected
+    if cat and cat.name == "Credit Card":
+        if "hx-request" in request.headers:
+            response = Response(status_code=200)
+            response.headers["HX-Reswap"] = "none"
+            response.set_cookie(key="toast_msg", value="Error: 'Credit Card' category is system-protected!")
+            return response
+        raise HTTPException(status_code=400, detail="Cannot delete 'Credit Card' category as it is required for system logic.")
+
     if not cat:
         return RedirectResponse(url="/settings/", status_code=303)
 

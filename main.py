@@ -1,6 +1,8 @@
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from typing import Optional
 from datetime import datetime as dt
 
 # 1. Standardize your Base import (Use the one from your models package)
@@ -89,11 +91,17 @@ app.include_router(loans_router)
 
 
 @app.get("/")
-async def index(request: Request, db: Session = Depends(get_db)):
+async def index(
+    request: Request, 
+    db: Session = Depends(get_db),
+    card_id: Optional[int] = Query(None),
+    payee_id: Optional[int] = Query(None),
+    category_id: Optional[int] = Query(None),
+):
     user = request.state.user
     from datetime import date
     from sqlalchemy import extract, func
-    from app.models import Loan
+    from app.models import Loan, Card, Payee, Category
     
     today = date.today()
     cur_y, cur_m = today.year, today.month
@@ -127,11 +135,22 @@ async def index(request: Request, db: Session = Depends(get_db)):
         .limit(5)
         .all()
     )
-    active_installments = (
-        db.query(Installment)
-        .filter(Installment.owner_id == user.id, Installment.status == "active")
-        .all()
-    )
+
+    # Filtered Installments
+    inst_query = db.query(Installment).filter(Installment.owner_id == user.id, Installment.status == "active")
+    if card_id:
+        inst_query = inst_query.filter(Installment.card_id == card_id)
+    if payee_id:
+        inst_query = inst_query.filter(Installment.payee_id == payee_id)
+    if category_id:
+        inst_query = inst_query.filter(Installment.category_id == category_id)
+    
+    active_installments = inst_query.all()
+
+    # Dropdowns for filters
+    cards = db.query(Card).filter(Card.owner_id == user.id).all()
+    payees = db.query(Payee).filter(Payee.owner_id == user.id).all()
+    categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
 
     from app.core.ui import render_template
     return render_template(
@@ -143,6 +162,12 @@ async def index(request: Request, db: Session = Depends(get_db)):
             "cashflow_expense_total": cashflow_expense_total,
             "loan_total_monthly": loan_total_monthly,
             "aggregate_monthly_payment": aggregate_monthly_payment,
+            "cards": cards,
+            "payees": payees,
+            "categories": categories,
+            "filter_card": card_id,
+            "filter_payee": payee_id,
+            "filter_category": category_id,
             "now": dt.now(),
             **stats,
         },

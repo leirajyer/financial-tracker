@@ -70,8 +70,32 @@
                 <h3 class="font-black text-slate-800 uppercase text-[10px] tracking-widest flex items-center gap-2">
                     <i class="fa-solid fa-credit-card text-indigo-500"></i> Credit Pulse
                 </h3>
-                <a href="/installments"
-                    class="text-[10px] text-indigo-600 font-bold uppercase hover:underline">Manage</a>
+                <div class="flex items-center gap-4">
+                    <form method="GET" action="/" class="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-[300px] md:max-w-none">
+                        <select name="card_id" onchange="this.form.submit()" class="text-[9px] font-black uppercase tracking-tight bg-slate-100 border-none rounded-lg p-1.5 focus:ring-1 focus:ring-indigo-500">
+                            <option value="">All Cards</option>
+                            {% for c in cards %}
+                            <option value="{{ c.id }}" {% if filter_card == c.id %}selected{% endif %}>{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <select name="payee_id" onchange="this.form.submit()" class="text-[9px] font-black uppercase tracking-tight bg-slate-100 border-none rounded-lg p-1.5 focus:ring-1 focus:ring-indigo-500">
+                            <option value="">All Payees</option>
+                            {% for p in payees %}
+                            <option value="{{ p.id }}" {% if filter_payee == p.id %}selected{% endif %}>{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <select name="category_id" onchange="this.form.submit()" class="text-[9px] font-black uppercase tracking-tight bg-slate-100 border-none rounded-lg p-1.5 focus:ring-1 focus:ring-indigo-500">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if filter_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if filter_card or filter_payee or filter_category %}
+                        <a href="/" class="text-[9px] font-black text-rose-500 uppercase hover:text-rose-600 transition-colors px-1">✕</a>
+                        {% endif %}
+                    </form>
+                    <a href="/installments" class="text-[10px] text-indigo-600 font-bold uppercase hover:underline">Manage</a>
+                </div>
             </div>
             <div class="p-2">
                 {% include "installments/summary.html" %}

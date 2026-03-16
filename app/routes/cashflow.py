@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, Form, Query
+from fastapi import APIRouter, Request, Depends, Form, Query, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract, or_
@@ -6,9 +6,36 @@ from datetime import date, datetime as dt
 from typing import Optional
 
 from app.database import get_db
-from app.models import CashFlow, Category
+from app.models import CashFlow, Category, Installment, Card, CardMonthlyStatus
 
 router = APIRouter(prefix="/cashflow", tags=["cashflow"])
+
+@router.get("/get-installments-by-category/{category_id}")
+async def get_installments_by_category(
+    request: Request,
+    category_id: int,
+    db: Session = Depends(get_db)
+):
+    user = request.state.user
+    category = db.query(Category).filter(Category.id == category_id).first()
+    
+    if not category or category.name != "Credit Card":
+        return Response(content="")
+
+    from app.services.debt import calculate_monthly_totals
+    stats = calculate_monthly_totals(db, user_id=user.id)
+    
+    # We want to show cards that have pending payments
+    pending_cards = stats.get("pending_cards", {})
+    
+    from app.core.ui import templates
+    return templates.TemplateResponse(
+        "cashflow/partials/card_selector.html",
+        {
+            "request": request,
+            "pending_cards": pending_cards,
+        }
+    )
 
 
 @router.get("/")
@@ -91,6 +118,7 @@ async def create_cashflow(
     amount: float = Form(...),
     transaction_type: str = Form(..., alias="type"),
     category_id: int = Form(None),
+    card_id: Optional[int] = Form(None),
     date_str: str = Form(None, alias="date"),
     db: Session = Depends(get_db),
 ):
@@ -110,6 +138,31 @@ async def create_cashflow(
     )
 
     db.add(new_entry)
+    
+    # NEW: Automated Credit Card Payment Logic
+    if transaction_type == "expense" and card_id:
+        category = db.query(Category).filter(Category.id == category_id).first()
+        if category and category.name == "Credit Card":
+            month_year = f"{entry_date.year}-{entry_date.month:02d}"
+            
+            # Check if status exists
+            status_obj = db.query(CardMonthlyStatus).filter(
+                CardMonthlyStatus.card_id == card_id,
+                CardMonthlyStatus.month_year == month_year
+            ).first()
+            
+            if status_obj:
+                status_obj.is_paid = True
+                status_obj.paid_at = dt.now()
+            else:
+                status_obj = CardMonthlyStatus(
+                    card_id=card_id,
+                    month_year=month_year,
+                    is_paid=True,
+                    paid_at=dt.now()
+                )
+                db.add(status_obj)
+
     db.commit()
 
     return RedirectResponse(url="/", status_code=303)

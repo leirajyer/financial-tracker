@@ -16,6 +16,7 @@ def seed_db():
             {"name": "Health", "color": "#ef4444"},
             {"name": "Savings", "color": "#06b6d4"},
             {"name": "Debt", "color": "#64748b"},
+            {"name": "Credit Card", "color": "#6366f1"},
         ]
 
         for cat_data in basic_categories:

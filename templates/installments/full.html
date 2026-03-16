@@ -15,11 +15,13 @@
     </div>
 
     <div class="bg-slate-900 p-10 rounded-xl mb-10 border border-slate-900 shadow-2xl shadow-emerald-50">
-        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-300 mb-3 opacity-80">Total Outstanding
-        </p>
+        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-300 mb-3 opacity-80">Total Outstanding</p>
         <h2 class="text-5xl font-black text-white tracking-tighter">
             ₱{{ "{:,.2f}".format(total_remaining) }}
         </h2>
+        <p class="text-[9px] font-bold text-emerald-500/50 uppercase tracking-[0.2em] mt-4 border-t border-white/5 pt-4">
+            Total principal and interest across all future installments
+        </p>
     </div>
 
     <div class="space-y-2">
