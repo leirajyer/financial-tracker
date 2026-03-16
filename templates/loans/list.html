@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="w-full mx-auto">
+    <div class="flex justify-between items-center mb-10">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Loan Portfolio</h1>
+            <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] mt-1">
+                {{ active_count }} Active Loans Tracked
+            </p>
+        </div>
+        <a href="/loans/add"
+            class="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-100">
+            + Apply for Loan
+        </a>
+    </div>
+
+    <!-- Summary Card -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div class="bg-slate-900 p-8 rounded-2xl border border-slate-900 shadow-2xl shadow-indigo-50">
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-300 mb-3 opacity-80">Total Loan Principal</p>
+            <h2 class="text-4xl font-black text-white tracking-tighter">
+                ₱{{ "{:,.2f}".format(total_amount) }}
+            </h2>
+        </div>
+        <div class="bg-white p-8 rounded-2xl border border-slate-100 shadow-xl shadow-slate-50">
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-3">Total Monthly Dues</p>
+            <h2 class="text-4xl font-black text-slate-800 tracking-tighter">
+                ₱{{ "{:,.2f}".format(total_monthly) }}
+            </h2>
+        </div>
+    </div>
+
+    <!-- Loan List -->
+    <div class="space-y-4">
+        {% for loan in loans %}
+        {% set prog = loan.get_progress() %}
+        <div class="group bg-white p-6 md:p-8 rounded-2xl hover:bg-slate-50 transition-all duration-300 border border-slate-50 relative overflow-hidden">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <!-- Info -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                        <h3 class="font-black text-slate-800 text-base tracking-tight truncate">
+                            {{ loan.description }}
+                        </h3>
+                        <span class="text-[9px] font-black text-indigo-500 uppercase bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
+                            {{ loan.category.name if loan.category else 'General' }}
+                        </span>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        ₱{{ "{:,.2f}".format(loan.amount) }} Principal · {{ loan.interest_rate }}% APR
+                    </p>
+                </div>
+
+                <!-- Stats Desktop -->
+                <div class="hidden lg:flex flex-row items-center gap-2 px-8 border-x border-slate-100 shrink-0">
+                    <div class="text-center px-4">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Start Date</p>
+                        <p class="text-xs font-bold text-slate-600 uppercase">{{ loan.start_date.strftime('%b %d, %Y') }}</p>
+                    </div>
+                    <div class="text-center px-4 border-l border-slate-100">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total to Pay</p>
+                        <p class="text-xs font-bold text-slate-800">₱{{ "{:,.0f}".format(loan.total_to_pay) }}</p>
+                    </div>
+                    <div class="text-center px-4 border-l border-slate-100">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Terms</p>
+                        <p class="text-xs font-bold text-slate-800">{{ loan.terms_years }} Years</p>
+                    </div>
+                    <div class="text-center px-4 border-l border-slate-100">
+                        <p class="text-[9px] font-black text-sky-500 uppercase tracking-widest mb-1">Remaining</p>
+                        <p class="text-xs font-bold text-sky-600">₱{{ "{:,.0f}".format(loan.get_remaining_balance()) }}</p>
+                    </div>
+                </div>
+
+                <!-- Right Side Info -->
+                <div class="flex items-center justify-between md:justify-end gap-10 shrink-0 w-full md:w-auto">
+                    <div class="text-left md:text-right">
+                        <p class="text-xl font-black text-slate-900 tracking-tighter leading-none">
+                            ₱{{ "{:,.2f}".format(loan.monthly_payment) }}
+                        </p>
+                        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Monthly Payment</p>
+                    </div>
+                    
+                    <form action="/loans/delete/{{ loan.id }}" method="POST" onsubmit="return confirm('Delete this loan record?')">
+                        <button type="submit" class="p-2 text-slate-300 hover:text-rose-500 transition-colors">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full space-y-2 mt-6">
+                <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-indigo-500 h-1.5 rounded-full transition-all duration-1000" style="width: {{ prog.percent }}%"></div>
+                </div>
+                <div class="flex justify-between items-center text-[8px] font-black uppercase tracking-[0.2em]">
+                    <span class="text-slate-400">{{ prog.current }}/{{ prog.total }} Months Paid</span>
+                    <span class="text-indigo-500">{{ prog.percent }}% Completed</span>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="py-20 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+            <span class="text-4xl mb-4 block">🏦</span>
+            <h3 class="font-black text-slate-800 text-lg">No loans tracked yet</h3>
+            <p class="text-slate-400 text-sm mt-1 mb-6">Start tracking your business or personal loans today.</p>
+            <a href="/loans/add" class="inline-flex bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider">
+                Apply First Loan
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

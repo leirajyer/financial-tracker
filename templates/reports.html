@@ -59,17 +59,23 @@
                     </form>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Card 1: Flowchart Pie -->
-                    <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex flex-col items-center min-h-[400px]">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8 self-start">Spending Breakdown</p>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Card 1: Spending Breakdown (Cash Flow) -->
+                    <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex flex-col items-center min-h-[420px]">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 self-start">Cash Flow Breakdown</p>
                         {% if breakdown %}
-                        <div class="relative w-full max-w-[280px] aspect-square my-auto">
+                        <div class="relative w-full max-w-[220px] aspect-square my-auto">
                             <canvas id="categoryPieChart"></canvas>
                             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span class="text-[10px] font-black text-slate-400 uppercase">Total</span>
-                                <span class="text-xl font-black text-slate-800 tracking-tighter">₱{{ "{:,.0f}".format(grand_total) }}</span>
+                                <span class="text-[8px] font-black text-slate-400 uppercase">Spent</span>
+                                <span class="text-lg font-black text-slate-800 tracking-tighter">₱{{ "{:,.0f}".format(grand_total) }}</span>
                             </div>
+                        </div>
+                        <div class="mt-6 w-full text-center">
+                             <p class="text-[9px] font-black text-slate-400 uppercase">Net Result</p>
+                             <p class="text-sm font-black {% if net_balance >= 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                                ₱{{ "{:,.2f}".format(net_balance) }}
+                             </p>
                         </div>
                         {% else %}
                         <div class="text-center my-auto">
@@ -80,53 +86,80 @@
                     </div>
 
                     <!-- Card 2: Installment Summary -->
-                    <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex flex-col min-h-[400px]">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-8">Monthly Commitments</p>
+                    <div class="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex flex-col min-h-[420px]">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Installment Dues</p>
                         
-                        <div class="flex-1 flex flex-col justify-center gap-8">
+                        <div class="flex-1 flex flex-col justify-center gap-6">
                             <div>
-                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Installment</p>
-                                <p class="text-4xl font-black text-slate-800 tracking-tighter">₱{{ "{:,.2f}".format(total_due) }}</p>
+                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Monthly Total</p>
+                                <p class="text-3xl font-black text-slate-800 tracking-tighter">₱{{ "{:,.2f}".format(total_due) }}</p>
                             </div>
 
-                            <div class="space-y-4">
-                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cards Active this Month</p>
+                            <div class="space-y-3">
+                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Cards</p>
                                 <div class="flex flex-wrap gap-2">
                                     {% for name, data in pending_cards.items() %}
-                                    <div class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-100 rounded-full shadow-sm">
-                                        <div class="w-2 h-2 rounded-full" style="background-color: {{ data.color }}"></div>
-                                        <span class="text-[10px] font-black text-slate-600 truncate max-w-[100px]">{{ name }}</span>
-                                        <span class="text-[10px] font-black text-rose-500">₱{{ "{:,.0f}".format(data.total) }}</span>
+                                    <div class="flex items-center gap-2 px-2.5 py-1 bg-white border border-slate-100 rounded-full shadow-sm">
+                                        <div class="w-1.5 h-1.5 rounded-full" style="background-color: {{ data.color }}"></div>
+                                        <span class="text-[9px] font-black text-slate-600 truncate max-w-[80px]">{{ name }}</span>
+                                        <span class="text-[9px] font-black text-rose-500">₱{{ "{:,.0f}".format(data.total) }}</span>
                                     </div>
                                     {% endfor %}
                                     
                                     {% for name, data in paid_cards.items() %}
-                                    <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-full shadow-sm">
-                                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                        <span class="text-[10px] font-black text-emerald-700 truncate max-w-[100px]">{{ name }}</span>
-                                        <span class="text-[10px] font-black text-emerald-600">₱{{ "{:,.0f}".format(data.total) }}</span>
-                                        <span class="text-[8px] font-black text-emerald-400 ml-1">PAID</span>
+                                    <div class="flex items-center gap-2 px-2.5 py-1 bg-emerald-50 border border-emerald-100 rounded-full shadow-sm">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                        <span class="text-[9px] font-black text-emerald-700 truncate max-w-[80px]">{{ name }}</span>
+                                        <span class="text-[9px] font-black text-emerald-600">₱{{ "{:,.0f}".format(data.total) }}</span>
                                     </div>
                                     {% endfor %}
                                     
                                     {% if not pending_cards and not paid_cards %}
-                                    <p class="text-[10px] font-bold text-slate-300 italic">No active cards found</p>
+                                    <p class="text-[9px] font-bold text-slate-300 italic">None</p>
                                     {% endif %}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mt-8 pt-6 border-t border-slate-100/50 flex justify-between items-end">
-                            <div>
-                                <p class="text-[8px] font-black text-slate-400 uppercase">Cash Flow Result</p>
-                                <p class="text-sm font-black {% if net_balance >= 0 %}text-blue-600{% else %}text-rose-600{% endif %}">
-                                    ₱{{ "{:,.2f}".format(net_balance) }}
-                                </p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-[8px] font-black text-slate-400 uppercase">Paid Status</p>
+                        <div class="mt-6 pt-4 border-t border-slate-100/50 flex justify-between items-end">
+                             <div class="text-right w-full">
+                                <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Paid Progress</p>
                                 <p class="text-sm font-black text-slate-800">{{ percentage_paid }}%</p>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Loans Summary -->
+                    <div class="bg-indigo-900 p-6 rounded-2xl border border-indigo-950 flex flex-col min-h-[420px] shadow-xl shadow-indigo-100/20">
+                        <p class="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-6">Loan Commitments</p>
+                        
+                        <div class="flex-1 flex flex-col justify-center gap-6">
+                            <div>
+                                <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1 text-opacity-80">Monthly Repayment</p>
+                                <p class="text-3xl font-black text-white tracking-tighter">₱{{ "{:,.2f}".format(loan_total_monthly) }}</p>
+                            </div>
+
+                            <div class="space-y-3">
+                                <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest text-opacity-80">Liability Categories</p>
+                                <div class="flex flex-wrap gap-2">
+                                    {% for cat_name, ldata in loan_categories.items() %}
+                                    <div class="flex items-center gap-2 px-2.5 py-1 bg-white/10 border border-white/10 rounded-full">
+                                        <div class="w-1.5 h-1.5 rounded-full" style="background-color: {{ ldata.color }}"></div>
+                                        <span class="text-[9px] font-black text-indigo-100 truncate max-w-[80px]">{{ cat_name }}</span>
+                                        <span class="text-[9px] font-black text-white">₱{{ "{:,.0f}".format(ldata.total) }}</span>
+                                    </div>
+                                    {% endfor %}
+                                    
+                                    {% if not loan_categories %}
+                                    <p class="text-[9px] font-bold text-indigo-400 italic">No active loans this month</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-white/10 text-right">
+                             <p class="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Global Status</p>
+                             <p class="text-sm font-black text-white uppercase tracking-tighter">Active Tracking</p>
                         </div>
                     </div>
                 </div>

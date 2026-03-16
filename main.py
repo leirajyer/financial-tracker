@@ -22,6 +22,7 @@ from app.routes import (
     cashflow_router,
     auth_router,
     reports_router,
+    loans_router,
 )
 
 from starlette.middleware.sessions import SessionMiddleware
@@ -84,12 +85,40 @@ app.include_router(settings_router)
 app.include_router(cashflow_router)
 app.include_router(auth_router)
 app.include_router(reports_router)
+app.include_router(loans_router)
 
 
 @app.get("/")
 async def index(request: Request, db: Session = Depends(get_db)):
     user = request.state.user
+    from datetime import date
+    from sqlalchemy import extract, func
+    from app.models import Loan
+    
+    today = date.today()
+    cur_y, cur_m = today.year, today.month
+    
+    # 1. Installment Stats
     stats = calculate_monthly_totals(db, user_id=user.id)
+    
+    # 2. Cashflow Expense Total for current month
+    cashflow_expense_total = db.query(func.sum(CashFlow.amount)).filter(
+        CashFlow.owner_id == user.id,
+        CashFlow.type == "expense",
+        extract("year", CashFlow.date) == cur_y,
+        extract("month", CashFlow.date) == cur_m
+    ).scalar() or 0.0
+    
+    # 3. Loan Total for current month
+    loans = db.query(Loan).filter(Loan.owner_id == user.id, Loan.status == "active").all()
+    loan_total_monthly = 0.0
+    target_dt = date(cur_y, cur_m, 1)
+    for loan in loans:
+        if loan.start_date <= target_dt <= loan.end_date:
+            loan_total_monthly += loan.monthly_payment
+
+    # Aggregate Total Payment
+    aggregate_monthly_payment = cashflow_expense_total + stats["total_due"] + loan_total_monthly
     
     recent_cashflow = (
         db.query(CashFlow)
@@ -111,6 +140,9 @@ async def index(request: Request, db: Session = Depends(get_db)):
         {
             "recent_cashflow": recent_cashflow,
             "installments": active_installments,
+            "cashflow_expense_total": cashflow_expense_total,
+            "loan_total_monthly": loan_total_monthly,
+            "aggregate_monthly_payment": aggregate_monthly_payment,
             "now": dt.now(),
             **stats,
         },

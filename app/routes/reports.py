@@ -88,7 +88,6 @@ async def reports_page(
     # NEW: Flowchart data (last 12 months)
     from sqlalchemy import func
     flowchart_data = []
-    today = date.today()
     for i in range(11, -1, -1):
         m = (today.month - i - 1) % 12 + 1
         y = today.year + (today.month - i - 1) // 12
@@ -116,12 +115,12 @@ async def reports_page(
     # NEW: Installment Report (Yearly filter)
     selected_inst_year = inst_year or today.year
     installment_report_data = []
-    installments = db.query(Installment).filter(Installment.owner_id == user.id).all()
+    installments_all = db.query(Installment).filter(Installment.owner_id == user.id).all()
     
     for month in range(1, 13):
         target_date = date(selected_inst_year, month, 1)
         monthly_total = sum(
-            item.monthly_payment for item in installments
+            item.monthly_payment for item in installments_all
             if item.start_date <= target_date <= item.end_date
         )
         installment_report_data.append({
@@ -129,21 +128,27 @@ async def reports_page(
             "total": round(monthly_total, 2)
         })
 
-    cur_y, cur_m = today.year, today.month
-    if period and period.strip():
-        try:
-            cur_y, cur_m = map(int, period.split("-"))
-        except:
-            pass
+    # NEW: Loan Report for Overview
+    from app.models import Loan
+    loans = db.query(Loan).filter(Loan.owner_id == user.id, Loan.status == "active").all()
+    
+    loan_total_monthly = 0.0
+    loan_categories = {}
+    target_dt = date(cur_y, cur_m, 1)
+
+    for loan in loans:
+        # Check if loan is active in this month
+        if loan.start_date <= target_dt <= loan.end_date:
+            loan_total_monthly += loan.monthly_payment
+            cat_name = loan.category.name if loan.category else "General"
+            if cat_name not in loan_categories:
+                loan_categories[cat_name] = {"total": 0.0, "color": loan.category.color if loan.category else "#6366f1"}
+            loan_categories[cat_name]["total"] += loan.monthly_payment
+
     stats = calculate_monthly_totals(db, year=cur_y, month=cur_m, user_id=user.id)
 
     # Month name for display
-    month_label = None
-    if period and period.strip():
-        try:
-            month_label = dt.strptime(period, "%Y-%m").strftime("%B %Y")
-        except Exception:
-            pass
+    month_label = dt(cur_y, cur_m, 1).strftime("%B %Y")
 
     return render_template(
         "reports.html",
@@ -160,6 +165,8 @@ async def reports_page(
             "transaction_count": len(transactions),
             "flowchart_data": flowchart_data,
             "installment_report_data": installment_report_data,
+            "loan_total_monthly": loan_total_monthly,
+            "loan_categories": loan_categories,
             "selected_inst_year": selected_inst_year,
             "available_years": range(today.year - 2, today.year + 3), # Simple year range
             **stats,
