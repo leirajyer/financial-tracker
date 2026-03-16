@@ -72,12 +72,11 @@ from app.seed import seed_db
 
 @app.on_event("startup")
 async def startup_event():
-    # Attempt to create tables on startup - more resilient for cloud environments
+    # Tables are now managed by Alembic migrations
     try:
-        Base.metadata.create_all(bind=engine)
         seed_db()
     except Exception as e:
-        print(f"⚠️ Startup DB Warning: {e}")
+        print(f"⚠️ Startup Seed Warning: {e}")
 
 
 # ... router includes ...

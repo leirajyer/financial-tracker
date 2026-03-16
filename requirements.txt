@@ -13,3 +13,4 @@ authlib
 httpx
 itsdangerous
 google-generativeai
+alembic
