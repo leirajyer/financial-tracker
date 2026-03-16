@@ -1,6 +1,7 @@
-from datetime import datetime as dt, date
+from datetime import date
 from sqlalchemy.orm import joinedload
-from app.models import Installment, CardMonthlyStatus
+from sqlalchemy import extract
+from app.models import Installment, CardMonthlyStatus, Loan, CashFlow, Category
 import calendar
 
 
@@ -47,7 +48,11 @@ def calculate_monthly_totals(
     for item in all_items:
         total_remaining_debt += item.get_remaining_balance()
 
-        if item.start_date <= target_date <= item.end_date:
+        # Monthly Normalization for comparison
+        item_start_norm = date(item.start_date.year, item.start_date.month, 1)
+        item_end_norm = date(item.end_date.year, item.end_date.month, 1)
+
+        if item_start_norm <= target_date <= item_end_norm:
             active_items.append(item)
             card = item.card
             c_id = (
@@ -55,21 +60,32 @@ def calculate_monthly_totals(
             )  # Use c_id to avoid overwriting function param card_id
             card_name = card.name if card else "Unknown"
             payment = item.monthly_payment
-            is_paid = paid_status_map.get(c_id, False)
+            # Master override from manual marking (CardMonthlyStatus)
+            item_is_paid = paid_status_map.get(c_id)
+            
+            if item_is_paid is None:
+                # DEFAULT LOGIC:
+                # 1. Start Date < Current Month -> PAID (Legacy)
+                # 2. Start Date == Current Month -> UNPAID (New)
+                # 3. Start Date > Current Month -> UNPAID (Future)
+                item_is_paid = (item_start_norm < target_date)
+            
+            # Carry the status for the templates
+            item.is_paid_current = item_is_paid
 
-            target_collection = paid_cards if is_paid else pending_cards
+            target_collection = paid_cards if item_is_paid else pending_cards
 
             if card_name not in target_collection:
                 target_collection[card_name] = {
                     "id": c_id,
                     "total": 0,
-                    "status": "PAID" if is_paid else "PENDING",
+                    "status": "PAID" if item_is_paid else "PENDING",
                     "color": card.color if card else "#94a3b8",
                 }
 
             target_collection[card_name]["total"] += payment
 
-            if is_paid:
+            if item_is_paid:
                 total_paid += payment
             else:
                 total_burn += payment
@@ -91,6 +107,30 @@ def calculate_monthly_totals(
     savings_delta = total_due - future_total
     percent_drop = round((savings_delta / total_due * 100)) if total_due > 0 else 0
 
+    # --- ADD LOANS & CASHFLOW AGGREGATES ---
+    cc_category = db_session.query(Category).filter(Category.name == "Credit Card").first()
+    cc_cat_id = cc_category.id if cc_category else -1
+
+    all_cashflow_expenses = db_session.query(CashFlow).filter(
+        CashFlow.owner_id == user_id,
+        CashFlow.type == "expense",
+        extract("year", CashFlow.date) == yr,
+        extract("month", CashFlow.date) == mo
+    ).all()
+
+    cashflow_expense_total = sum(tx.amount for tx in all_cashflow_expenses)
+    cashflow_cc_payment_total = sum(tx.amount for tx in all_cashflow_expenses if tx.category_id == cc_cat_id)
+    cashflow_regular_expense_total = cashflow_expense_total - cashflow_cc_payment_total
+
+    loans = db_session.query(Loan).filter(Loan.owner_id == user_id, Loan.status == "active").all()
+    loan_total_monthly = 0.0
+    for loan in loans:
+        if loan.start_date <= target_date <= loan.end_date:
+            loan_total_monthly += loan.monthly_payment
+
+    # Total Remaining Aggregate (What's still due or already spent this month)
+    aggregate_monthly_payment = cashflow_regular_expense_total + total_burn + loan_total_monthly
+
     return {
         "total_burn": round(total_burn, 2),
         "total_paid": round(total_paid, 2),
@@ -107,6 +147,10 @@ def calculate_monthly_totals(
         "savings_delta": savings_delta,
         "percent_drop": percent_drop,
         "avg_monthly_burn": round(total_due, 2),
+        "loan_total_monthly": loan_total_monthly,
+        "cashflow_expense_total": cashflow_expense_total,
+        "cashflow_regular_expense_total": cashflow_regular_expense_total,
+        "aggregate_monthly_payment": aggregate_monthly_payment,
     }
 
 

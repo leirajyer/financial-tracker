@@ -73,7 +73,7 @@
                     <div class="text-left md:text-right flex flex-col items-start md:items-end">
                         <p class="text-lg font-black text-slate-900 tracking-tighter leading-none">₱{{
                             "{:,.2f}".format(inst.monthly_payment) }}</p>
-                        {% set is_paid = paid_status_map.get(inst.card_id, False) if paid_status_map is defined else False %}
+                        {% set is_paid = inst.is_paid_current %}
                         {% if is_paid %}
                         <span class="text-[7px] font-black bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-1">PAID</span>
                         {% else %}
