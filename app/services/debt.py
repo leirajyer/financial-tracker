@@ -35,7 +35,8 @@ def calculate_monthly_totals(
     # However, let's filter statuses by checking the card's owner.
     
     statuses = status_query.all()
-    paid_status_map = {s.card_id: s.is_paid for s in statuses}
+    # Map card_id to its status object for richer checks
+    paid_status_map = {s.card_id: s for s in statuses}
 
     total_burn = 0  # Unpaid amount
     total_paid = 0  # Paid amount
@@ -61,10 +62,17 @@ def calculate_monthly_totals(
             card_name = card.name if card else "Unknown"
             payment = item.monthly_payment
             # Master override from manual marking (CardMonthlyStatus)
-            item_is_paid = paid_status_map.get(c_id)
+            status_obj = paid_status_map.get(c_id)
+            item_is_paid = status_obj.is_paid if status_obj else False
             
-            if item_is_paid is None:
-                # DEFAULT LOGIC: All active installments are PENDING until manually marked
+            # CRITICAL FIX: If the card was marked as PAID, but this SPECIFIC installment 
+            # was added AFTER the payment occurred, it should stay PENDING.
+            if item_is_paid and status_obj and status_obj.paid_at:
+                if item.created_at > status_obj.paid_at:
+                    item_is_paid = False
+            
+            if status_obj is None:
+                # DEFAULT LOGIC: All items start as PENDING
                 item_is_paid = False
             
             # Carry the status for the templates
