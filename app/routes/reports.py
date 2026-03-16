@@ -25,28 +25,32 @@ async def reports_page(
     user = request.state.user
     from sqlalchemy import extract
 
-    query = db.query(CashFlow).filter(CashFlow.owner_id == user.id)
-
-    if period and period.strip():
+    today = date.today()
+    cur_y, cur_m = today.year, today.month
+    if period and isinstance(period, str) and period.strip():
         try:
             y, m = map(int, period.split("-"))
-            query = query.filter(
-                extract("year", CashFlow.date) == y,
-                extract("month", CashFlow.date) == m,
-            )
-        except Exception:
+            cur_y, cur_m = y, m
+        except (ValueError, AttributeError):
             pass
 
-    if tx_type and tx_type.strip():
-        query = query.filter(CashFlow.type == tx_type)
+    # Basic query for the selected month
+    query = db.query(CashFlow).filter(
+        CashFlow.owner_id == user.id,
+        extract("year", CashFlow.date) == cur_y,
+        extract("month", CashFlow.date) == cur_m
+    )
 
     transactions = query.order_by(CashFlow.date.desc()).all()
 
-    # Build category breakdown
+    # Build category breakdown (Expenses only for the pie)
     category_totals: dict[str, dict] = {}
     uncategorized_total = 0.0
 
     for tx in transactions:
+        if tx.type != "expense":
+            continue
+            
         if tx.category:
             key = tx.category.name
             if key not in category_totals:
@@ -66,7 +70,7 @@ async def reports_page(
             "name": "Uncategorized",
             "color": "#94a3b8",
             "total": uncategorized_total,
-            "count": sum(1 for t in transactions if not t.category),
+            "count": sum(1 for t in transactions if t.type == "expense" and not t.category),
         }
 
     grand_total = sum(v["total"] for v in category_totals.values())
@@ -125,7 +129,13 @@ async def reports_page(
             "total": round(monthly_total, 2)
         })
 
-    stats = calculate_monthly_totals(db, user_id=user.id)
+    cur_y, cur_m = today.year, today.month
+    if period and period.strip():
+        try:
+            cur_y, cur_m = map(int, period.split("-"))
+        except:
+            pass
+    stats = calculate_monthly_totals(db, year=cur_y, month=cur_m, user_id=user.id)
 
     # Month name for display
     month_label = None

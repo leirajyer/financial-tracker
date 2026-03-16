@@ -64,6 +64,7 @@ def calculate_monthly_totals(
                     "id": c_id,
                     "total": 0,
                     "status": "PAID" if is_paid else "PENDING",
+                    "color": card.color if card else "#94a3b8",
                 }
 
             target_collection[card_name]["total"] += payment
