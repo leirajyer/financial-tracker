@@ -13,24 +13,24 @@
         <!-- Main Aggregate Total -->
         <div class="bg-indigo-900 rounded-2xl p-6 shadow-xl shadow-indigo-100/30 flex flex-col justify-between min-h-[140px] border border-indigo-950">
             <div>
-                <p class="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em] mb-1">Total Payment for {{ month_name }}</p>
+                <p class="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em] mb-1">Remaining Balance for {{ month_name }}</p>
                 <h2 class="text-3xl font-black text-white tracking-tighter">₱{{ "{:,.2f}".format(aggregate_monthly_payment) }}</h2>
             </div>
             <div class="flex items-center gap-2 mt-4">
-                <span class="px-2 py-1 bg-white/10 border border-white/5 rounded text-[8px] font-black text-indigo-100 uppercase tracking-widest">Combined Summary</span>
+                <span class="px-2 py-1 bg-white/10 border border-white/5 rounded text-[8px] font-black text-indigo-100 uppercase tracking-widest">Remaining Total</span>
             </div>
         </div>
         
         <!-- Debt Total (Installments + Loans) -->
         <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between min-h-[140px]">
             <div>
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Liability Dues</p>
-                <p class="text-2xl font-black text-slate-800 tracking-tight">₱{{ "{:,.2f}".format(total_due + loan_total_monthly) }}</p>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Remaining Liability Dues</p>
+                <p class="text-2xl font-black text-slate-800 tracking-tight">₱{{ "{:,.2f}".format(total_burn + loan_total_monthly) }}</p>
             </div>
             <div class="flex items-center gap-3 mt-4">
                 <div class="flex flex-col">
-                    <span class="text-[8px] font-black text-slate-400 uppercase">Installments</span>
-                    <span class="text-[10px] font-bold text-slate-600">₱{{ "{:,.0f}".format(total_due) }}</span>
+                    <span class="text-[8px] font-black text-slate-400 uppercase">Remaining Inst.</span>
+                    <span class="text-[10px] font-bold text-slate-600">₱{{ "{:,.0f}".format(total_burn) }}</span>
                 </div>
                 <div class="w-px h-6 bg-slate-100"></div>
                 <div class="flex flex-col">
