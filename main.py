@@ -110,12 +110,20 @@ async def index(
     stats = calculate_monthly_totals(db, user_id=user.id)
     
     # 2. Cashflow Expense Total for current month
-    cashflow_expense_total = db.query(func.sum(CashFlow.amount)).filter(
+    # We separate regular expenses from credit card payments to avoid double counting in the aggregate
+    cc_category = db.query(Category).filter(Category.name == "Credit Card").first()
+    cc_cat_id = cc_category.id if cc_category else -1
+
+    all_cashflow_expenses = db.query(CashFlow).filter(
         CashFlow.owner_id == user.id,
         CashFlow.type == "expense",
         extract("year", CashFlow.date) == cur_y,
         extract("month", CashFlow.date) == cur_m
-    ).scalar() or 0.0
+    ).all()
+
+    cashflow_expense_total = sum(cat.amount for cat in all_cashflow_expenses)
+    cashflow_cc_payment_total = sum(cat.amount for cat in all_cashflow_expenses if cat.category_id == cc_cat_id)
+    cashflow_regular_expense_total = cashflow_expense_total - cashflow_cc_payment_total
     
     # 3. Loan Total for current month
     loans = db.query(Loan).filter(Loan.owner_id == user.id, Loan.status == "active").all()
@@ -125,8 +133,8 @@ async def index(
         if loan.start_date <= target_dt <= loan.end_date:
             loan_total_monthly += loan.monthly_payment
 
-    # Aggregate Total Payment
-    aggregate_monthly_payment = cashflow_expense_total + stats["total_due"] + loan_total_monthly
+    # Aggregate Total Payment (Obligation = Scheduled Installments + Scheduled Loans + Regular Expenses)
+    aggregate_monthly_payment = cashflow_regular_expense_total + stats["total_due"] + loan_total_monthly
     
     recent_cashflow = (
         db.query(CashFlow)

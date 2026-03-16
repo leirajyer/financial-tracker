@@ -44,18 +44,30 @@
                     <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Add New Card</h4>
                     
                     <div class="flex flex-col md:flex-row gap-4">
-                        <input type="text" name="name" placeholder="e.g. BPI Blue Visa" required
-                            class="flex-1 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700 shadow-sm">
+                        <div class="flex-1">
+                            <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-1">Card Name</label>
+                            <input type="text" name="name" placeholder="e.g. BPI Blue Visa" required
+                                class="w-full px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700 shadow-sm">
+                        </div>
                         
-                        <input type="color" name="color" value="#6366f1"
-                            class="w-full md:w-16 h-12 bg-white border border-slate-100 rounded-xl cursor-pointer p-1 transition-all hover:bg-slate-50 shadow-sm shrink-0">
+                        <div class="shrink-0">
+                            <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-1">Card Color</label>
+                            <input type="color" name="color" value="#6366f1"
+                                class="w-full md:w-16 h-12 bg-white border border-slate-100 rounded-xl cursor-pointer p-1 transition-all hover:bg-slate-50 shadow-sm">
+                        </div>
                     </div>
                     
-                    <div class="flex gap-4">
-                        <input type="number" name="due_day" placeholder="Due Day (1-31)" required min="1" max="31"
-                            class="w-1/2 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700 shadow-sm">
-                        <input type="number" step="0.01" name="card_limit" placeholder="Credit Limit" required min="0" value="0.0"
-                            class="w-1/2 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 text-right transition-all font-bold text-slate-700 shadow-sm">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-1">Due Day</label>
+                            <input type="number" name="due_day" placeholder="Due Day (1-31)" required min="1" max="31"
+                                class="w-full px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 transition-all font-bold text-slate-700 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-1">Credit Limit</label>
+                            <input type="number" step="0.01" name="card_limit" placeholder="Credit Limit" required min="0" value="0.0"
+                                class="w-full px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 text-right transition-all font-bold text-slate-700 shadow-sm">
+                        </div>
                     </div>
 
                     <button type="submit"
@@ -86,11 +98,14 @@
                     class="flex flex-col gap-4 bg-slate-50/50 p-6 rounded-xl border border-slate-100">
                     <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Add New Payee</h4>
                     
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <input type="text" name="name" placeholder="" required
-                            class="flex-1 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm font-bold text-slate-700">
+                    <div class="flex flex-col md:flex-row items-end gap-4">
+                        <div class="flex-1">
+                            <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-1">Payee Name</label>
+                            <input type="text" name="name" placeholder="e.g. Meralco, SM Supermarket" required
+                                class="w-full px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm font-bold text-slate-700">
+                        </div>
                         <button type="submit"
-                            class="py-3.5 px-8 bg-emerald-600 text-white rounded-xl text-sm font-black hover:bg-emerald-700 hover:scale-[1.01] active:scale-95 transition-all shadow-lg shadow-emerald-200">
+                            class="h-[44px] px-8 bg-emerald-600 text-white rounded-xl text-xs font-black hover:bg-emerald-700 hover:scale-[1.01] active:scale-95 transition-all shadow-lg shadow-emerald-200">
                             ADD PAYEE
                         </button>
                     </div>
@@ -119,10 +134,16 @@
                     <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Add New Category</h4>
                     
                     <div class="flex flex-col md:flex-row gap-4">
-                        <input type="text" name="name" placeholder="New Category Name" required
-                            class="flex-1 px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-purple-500 transition-all font-bold text-slate-700 shadow-sm">
-                        <input type="color" name="color" value="#8b5cf6"
-                            class="w-full md:w-16 h-12 bg-white border border-slate-100 rounded-xl cursor-pointer p-1 transition-all hover:bg-slate-50 shadow-sm shrink-0">
+                        <div class="flex-1">
+                            <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-1">Category Name</label>
+                            <input type="text" name="name" placeholder="e.g. Subscription, Hobby" required
+                                class="w-full px-4 py-3 bg-white border-none rounded-xl text-sm focus:ring-2 focus:ring-purple-500 transition-all font-bold text-slate-700 shadow-sm">
+                        </div>
+                        <div class="shrink-0">
+                            <label class="block text-[8px] font-black text-slate-400 uppercase mb-1 ml-1">Color</label>
+                            <input type="color" name="color" value="#8b5cf6"
+                                class="w-full md:w-16 h-12 bg-white border border-slate-100 rounded-xl cursor-pointer p-1 transition-all hover:bg-slate-50 shadow-sm">
+                        </div>
                     </div>
                     <button type="submit"
                         class="w-full py-3.5 bg-purple-600 text-white rounded-xl text-sm font-black hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 mt-2">
