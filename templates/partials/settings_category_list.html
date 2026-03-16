@@ -5,9 +5,11 @@
         <span class="text-xs font-bold text-slate-700">{{ cat.name }}</span>
     </div>
     <div class="flex gap-2">
+        {% if cat.name != "Credit Card" %}
         <button onclick="document.getElementById('edit-cat-modal-{{ cat.id }}').classList.remove('hidden')" class="text-slate-300 hover:text-blue-400 transition-all shrink-0">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
         </button>
+        {% endif %}
         {% if cat.name != "Credit Card" %}
         <button hx-delete="/settings/delete-category/{{ cat.id }}" hx-confirm="Remove this category?" hx-target="closest div.flex.items-center.justify-between"
             hx-swap="outerHTML" class="text-slate-300 hover:text-red-400 transition-all shrink-0"><svg

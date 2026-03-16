@@ -18,4 +18,4 @@ pgdata/
 .DS_Store
 
 # Docker
-.docker/
+.docker/local.db
