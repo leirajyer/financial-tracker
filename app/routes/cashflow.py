@@ -71,6 +71,7 @@ async def show_all_cashflow(
     
     # Categories: show user's categories or global ones (though we should migrate to user-only)
     categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
+    cards = db.query(Card).filter(Card.owner_id == user.id).order_by(Card.name).all()
 
     total_income = sum(t.amount for t in transactions if t.type == "income")
     total_expense = sum(t.amount for t in transactions if t.type == "expense")
@@ -92,6 +93,7 @@ async def show_all_cashflow(
             "filter_period": period,
             "filter_cat": cat_id_int,
             "filter_type": tx_type,
+            "cards": cards,
             **stats
         },
     )
@@ -138,14 +140,22 @@ async def create_cashflow(
     is_cc_payment = category and category.name == "Credit Card"
     
     # Resolving final card ID based on category
-    final_card_id = card_id if is_cc_payment else expense_card_id
-    if transaction_type != "expense":
+    # If type is 'credit_expense', we MUST have a card.
+    # If type is 'expense' (Cash), card is usually None unless it's a CC payment (which uses card_id from HTMX)
+    if transaction_type == "credit_expense":
+        final_card_id = expense_card_id
+        db_type = "expense"
+    elif transaction_type == "expense":
+        final_card_id = card_id if is_cc_payment else None
+        db_type = "expense"
+    else:
         final_card_id = None
+        db_type = "income"
 
     new_entry = CashFlow(
         description=description,
         amount=amount,
-        type=transaction_type,
+        type=db_type,
         category_id=category_id if category_id else None,
         date=entry_date,
         owner_id=user.id,
@@ -155,7 +165,7 @@ async def create_cashflow(
     db.add(new_entry)
     
     # NEW: Automated Credit Card Payment Logic
-    if transaction_type == "expense" and is_cc_payment and final_card_id:
+    if db_type == "expense" and is_cc_payment and final_card_id:
             month_year = f"{entry_date.year}-{entry_date.month:02d}"
             
             # Check if status exists
@@ -202,15 +212,21 @@ async def update_transaction(
     category = db.query(Category).filter(Category.id == category_id).first() if category_id else None
     is_cc_payment = category and category.name == "Credit Card"
     
-    final_card_id = card_id if is_cc_payment else expense_card_id
-    if transaction_type != "expense":
+    if transaction_type == "credit_expense":
+        final_card_id = expense_card_id
+        db_type = "expense"
+    elif transaction_type == "expense":
+        final_card_id = card_id if is_cc_payment else None
+        db_type = "expense"
+    else:
         final_card_id = None
+        db_type = "income"
 
     tx.description = description.strip()
     tx.amount = abs(amount)
     tx.category_id = category_id if category_id else None
     tx.card_id = final_card_id
-    tx.type = transaction_type
+    tx.type = db_type
 
     db.commit()
     return RedirectResponse(url="/cashflow/", status_code=303)

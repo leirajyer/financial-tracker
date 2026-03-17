@@ -113,10 +113,12 @@
                             <p class="text-base font-black tracking-tighter leading-none {% if tx.type == 'income' %}text-emerald-500{% else %}text-rose-500{% endif %}">
                                 {{ "+" if tx.type == "income" else "-" }} ₱{{ "{:,.2f}".format(tx.amount) }}
                             </p>
-                            <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1 block leading-none">{{ tx.type }}</span>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1 block leading-none">
+                                {{ tx.type }} {% if tx.card %}via <span class="text-indigo-400 font-black">{{ tx.card.name }}</span>{% endif %}
+                            </span>
                         </div>
 
-                        <button onclick="openEditModal('{{ tx.id }}', '{{ tx.description }}', '{{ tx.amount }}', '{{ tx.category_id }}', '{{ tx.type }}', '{{ tx.date.strftime('%Y-%m-%d') }}')"
+                        <button onclick="openEditModal('{{ tx.id }}', '{{ tx.description }}', '{{ tx.amount }}', '{{ tx.category_id }}', '{% if tx.card_id and tx.category and tx.category.name != \'Credit Card\' %}credit_expense{% else %}{{ tx.type }}{% endif %}', '{{ tx.date.strftime(\'%Y-%m-%d\') }}', '{{ tx.card_id or \'\' }}')"
                                 class="p-2.5 text-slate-300 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm md:shadow-none border border-transparent hover:border-slate-100 active:scale-95">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -155,21 +157,41 @@
 
             <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Transaction Type</label>
-                <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-xl">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-1.5 bg-slate-100 rounded-xl">
                     <label class="cursor-pointer">
                         <input type="radio" name="type" id="type_income" value="income" class="hidden peer">
                         <div
-                            class="py-3 text-center rounded-xl font-bold text-sm transition-all peer-checked:bg-white peer-checked:text-emerald-600 peer-checked:shadow-sm text-slate-500">
+                            class="py-3 text-center rounded-xl font-bold text-[10px] transition-all peer-checked:bg-white peer-checked:text-emerald-600 peer-checked:shadow-sm text-slate-500">
                             💰 Income
                         </div>
                     </label>
                     <label class="cursor-pointer">
                         <input type="radio" name="type" id="type_expense" value="expense" class="hidden peer">
                         <div
-                            class="py-3 text-center rounded-xl font-bold text-sm transition-all peer-checked:bg-white peer-checked:text-rose-600 peer-checked:shadow-sm text-slate-500">
-                            💸 Expense
+                            class="py-3 text-center rounded-xl font-bold text-[10px] transition-all peer-checked:bg-white peer-checked:text-rose-600 peer-checked:shadow-sm text-slate-500">
+                            💸 Cash Expense
                         </div>
                     </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" id="type_credit_expense" value="credit_expense" class="hidden peer">
+                        <div
+                            class="py-3 text-center rounded-xl font-bold text-[10px] transition-all peer-checked:bg-white peer-checked:text-indigo-600 peer-checked:shadow-sm text-slate-500">
+                            💳 Card Swipe
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Card Selector for Edit Modal -->
+            <div id="edit_card_container" class="hidden">
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Paid via Card</label>
+                <div class="relative">
+                    <select name="expense_card_id" id="edit_card_select" class="w-full p-4 bg-slate-50 border-none rounded-xl font-bold focus:ring-2 focus:ring-emerald-500 text-slate-700 appearance-none">
+                        <option value="">-- Cash / Other --</option>
+                        {% for card in cards %}
+                        <option value="{{ card.id }}">{{ card.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
 
@@ -221,7 +243,22 @@
 <script>
     let currentEditId = null;
 
-    function openEditModal(id, desc, amt, catId, type, dateStr) {
+    function updateEditCardVisibility() {
+        const typeCredit = document.getElementById('type_credit_expense').checked;
+        const container = document.getElementById('edit_card_container');
+        if (typeCredit) {
+            container.classList.remove('hidden');
+        } else {
+            container.classList.add('hidden');
+        }
+    }
+
+    // Listen for type changes in edit modal
+    document.querySelectorAll('#editModal input[name="type"]').forEach(radio => {
+        radio.addEventListener('change', updateEditCardVisibility);
+    });
+
+    function openEditModal(id, desc, amt, catId, type, dateStr, cardId) {
         currentEditId = id;
 
         // Set the Update action URL
@@ -233,22 +270,29 @@
         document.getElementById('edit_amt').value = amt;
         document.getElementById('edit_date').value = dateStr;
 
-        // 2. Handle Transaction Type Radio (Income/Expense)
-        // This finds the radio button with the matching value and checks it
-        const typeRadio = document.querySelector(`input[name="type"][value="${type}"]`);
+        // 2. Handle Transaction Type Radio
+        const typeRadio = document.querySelector(`#editModal input[name="type"][value="${type}"]`);
         if (typeRadio) typeRadio.checked = true;
+        
+        // Update card visibility based on type
+        updateEditCardVisibility();
 
-        // 3. Handle Category Chip Radio
-        // We look for the radio button with the ID cat_ + the category ID
+        // 3. Set card if applicable
+        if (cardId) {
+            document.getElementById('edit_card_select').value = cardId;
+        } else {
+            document.getElementById('edit_card_select').value = "";
+        }
+
+        // 4. Handle Category Chip Radio
         const catRadio = document.getElementById('cat_' + catId);
         if (catRadio) {
             catRadio.checked = true;
         } else {
-            // Uncheck all if no category matches
-            document.querySelectorAll('input[name="category_id"]').forEach(el => el.checked = false);
+            document.querySelectorAll('#editModal input[name="category_id"]').forEach(el => el.checked = false);
         }
 
-        // 4. Display Modal
+        // 5. Display Modal
         const modal = document.getElementById('editModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
