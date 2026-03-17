@@ -15,15 +15,41 @@ router = APIRouter(prefix="/installments", tags=["Installments"])
 
 
 @router.get("/")
-async def list_all_installments(request: Request, db: Session = Depends(get_db)):
+async def list_all_installments(
+    request: Request, 
+    db: Session = Depends(get_db),
+    card_id: Optional[int] = Query(None),
+    payee_id: Optional[int] = Query(None),
+    completion: Optional[str] = Query(None) # YYYY-MM
+):
     user = request.state.user
+    query = db.query(Installment).filter(Installment.owner_id == user.id)
+
+    if card_id:
+        query = query.filter(Installment.card_id == card_id)
+    if payee_id:
+        query = query.filter(Installment.payee_id == payee_id)
+
+    # Order by ID DESC to show last added on top
     installments = (
-        db.query(Installment)
-        .filter(Installment.owner_id == user.id)
+        query
         .options(joinedload(Installment.card))
-        .order_by(Installment.start_date.desc())
+        .order_by(Installment.id.desc())
         .all()
     )
+
+    # Filter by completion date (Python side as it's a derived property)
+    if completion:
+        try:
+            target_y, target_m = map(int, completion.split("-"))
+            filtered = []
+            for inst in installments:
+                ed = inst.end_date
+                if ed and ed.year == target_y and ed.month == target_m:
+                    filtered.append(inst)
+            installments = filtered
+        except:
+            pass
 
     stats = calculate_monthly_totals(db, user_id=user.id)
     total_remaining = stats["total_remaining_debt"]
@@ -53,6 +79,9 @@ async def list_all_installments(request: Request, db: Session = Depends(get_db))
             "cards": cards,
             "categories": categories,
             "payees": payees,
+            "filter_card": card_id,
+            "filter_payee": payee_id,
+            "filter_completion": completion,
             **stats
         },
     )

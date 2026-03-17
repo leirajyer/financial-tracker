@@ -71,9 +71,9 @@
                     <div class="relative group">
                         <select name="payee_id" required
                             class="w-full appearance-none bg-slate-50 border-none rounded-xl p-4 pr-12 font-black text-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer">
-                            <option value="" disabled selected>Select Payee</option>
+                            <option value="" disabled>Select Payee</option>
                             {% for p in payees %}
-                            <option value="{{ p.id }}">{{ p.name }}</option>
+                            <option value="{{ p.id }}" {% if p.name == "Owner" %}selected{% endif %}>{{ p.name }}</option>
                             {% endfor %}
                         </select>
                         <div

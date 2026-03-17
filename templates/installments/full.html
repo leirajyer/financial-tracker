@@ -14,14 +14,57 @@
         </a>
     </div>
 
-    <div class="bg-slate-900 p-10 rounded-xl mb-10 border border-slate-900 shadow-2xl shadow-emerald-50">
-        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-300 mb-3 opacity-80">Total Outstanding</p>
-        <h2 class="text-5xl font-black text-white tracking-tighter">
-            ₱{{ "{:,.2f}".format(total_remaining) }}
-        </h2>
-        <p class="text-[9px] font-bold text-emerald-500/50 uppercase tracking-[0.2em] mt-4 border-t border-white/5 pt-4">
-            Total principal and interest across all future installments
-        </p>
+    <div class="bg-slate-900 p-10 rounded-xl border border-slate-900 shadow-2xl shadow-emerald-50 relative overflow-hidden">
+        <div class="relative z-10">
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-300 mb-3 opacity-80">Total Outstanding</p>
+            <h2 class="text-5xl font-black text-white tracking-tighter">
+                ₱{{ "{:,.2f}".format(total_remaining) }}
+            </h2>
+            <p class="text-[9px] font-bold text-emerald-500/50 uppercase tracking-[0.2em] mt-4 border-t border-white/5 pt-4">
+                Total principal and interest across all future installments
+            </p>
+        </div>
+        <div class="absolute -right-4 -bottom-4 text-white/5 font-black text-9xl select-none">PHP</div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mb-6 flex flex-wrap items-center gap-4">
+        <form action="/installments/" method="GET" class="flex flex-wrap items-center gap-4 w-full">
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase ml-2">Card:</span>
+                <select name="card_id" onchange="this.form.submit()"
+                        class="bg-slate-50 border-none rounded-xl text-[10px] font-black p-2 pr-8 focus:ring-2 focus:ring-indigo-500 uppercase tracking-wider">
+                    <option value="">All Cards</option>
+                    {% for card in cards %}
+                    <option value="{{ card.id }}" {% if filter_card|string == card.id|string %}selected{% endif %}>{{ card.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase ml-2">Payee:</span>
+                <select name="payee_id" onchange="this.form.submit()"
+                        class="bg-slate-50 border-none rounded-xl text-[10px] font-black p-2 pr-8 focus:ring-2 focus:ring-indigo-500 uppercase tracking-wider">
+                    <option value="">All Payees</option>
+                    {% for p in payees %}
+                    <option value="{{ p.id }}" {% if filter_payee|string == p.id|string %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black text-slate-400 uppercase ml-2">Target Finish:</span>
+                <input type="month" name="completion" value="{{ filter_completion or '' }}" 
+                       onchange="this.form.submit()"
+                       class="bg-slate-50 border-none rounded-xl text-[10px] font-black p-2 focus:ring-2 focus:ring-indigo-500 uppercase tracking-wider">
+            </div>
+
+            {% if filter_card or filter_payee or filter_completion %}
+            <a href="/installments/" class="ml-auto text-[10px] font-black text-rose-500 uppercase hover:text-rose-600 transition-colors flex items-center gap-2">
+                <span class="bg-rose-50 px-2 py-1 rounded-lg">✕ Clear Filters</span>
+            </a>
+            {% endif %}
+        </form>
     </div>
 
     <div class="space-y-2">
