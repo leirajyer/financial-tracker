@@ -3,10 +3,11 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import extract, func
 from app.models import Installment, CardMonthlyStatus, Loan, CashFlow, Category
 import calendar
+from types import SimpleNamespace
 
 
 def calculate_monthly_totals(
-    db_session, year=None, month=None, card_id=None, payee_id=None, user_id=None
+    db_session, year=None, month=None, card_id=None, payee_id=None, category_id=None, user_id=None
 ):
     """Calculates summary stats and separates cards by their payment status."""
     today = date.today()
@@ -24,6 +25,8 @@ def calculate_monthly_totals(
         query = query.filter(Installment.card_id == card_id)
     if payee_id:
         query = query.filter(Installment.payee_id == payee_id)
+    if category_id:
+        query = query.filter(Installment.category_id == category_id)
 
     all_items = query.all()
 
@@ -47,6 +50,9 @@ def calculate_monthly_totals(
     active_items = []
 
     for item in all_items:
+        if not item.start_date or not item.end_date:
+            continue
+            
         total_remaining_debt += item.get_remaining_balance()
 
         # Monthly Normalization for comparison
@@ -166,10 +172,20 @@ def calculate_monthly_totals(
 
     cashflow_regular_expense_total = cashflow_expense_total - cashflow_cc_payment_total
 
-    loans = db_session.query(Loan).options(joinedload(Loan.card)).filter(Loan.owner_id == user_id, Loan.status == "active").all()
+    loans_q = db_session.query(Loan).options(joinedload(Loan.card)).filter(Loan.owner_id == user_id, Loan.status == "active")
+    if card_id:
+        loans_q = loans_q.filter(Loan.card_id == card_id)
+    if category_id:
+        loans_q = loans_q.filter(Loan.category_id == category_id)
+    # Note: Loans don't currently have a payee_id field, but if they did, we'd filter it here.
+    
+    loans = loans_q.all()
     loan_total_monthly = 0.0
     loan_unlinked_total = 0.0
     for loan in loans:
+        if not loan.start_date or not loan.end_date:
+            continue
+            
         if loan.start_date <= target_date <= loan.end_date:
             monthly_payment = loan.monthly_payment or 0.0
             loan_total_monthly += monthly_payment
@@ -209,7 +225,6 @@ def calculate_monthly_totals(
                 
                 # Dynamically add a payee attribute for the template if it doesn't exist
                 if not hasattr(loan, 'payee') or loan.payee is None:
-                    from types import SimpleNamespace
                     loan.payee = SimpleNamespace(name="Loan (Credit)")
                 
                 active_items.append(loan)

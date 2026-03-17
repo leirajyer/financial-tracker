@@ -102,7 +102,8 @@ async def index(
         db, 
         user_id=user.id, 
         card_id=card_id, 
-        payee_id=payee_id
+        payee_id=payee_id,
+        category_id=category_id
     )
     
     # 2. Extract specific totals for readability
