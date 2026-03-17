@@ -118,7 +118,7 @@
                             </span>
                         </div>
 
-                        <button onclick="openEditModal('{{ tx.id }}', '{{ tx.description }}', '{{ tx.amount }}', '{{ tx.category_id }}', '{% if tx.card_id and tx.category and tx.category.name != \'Credit Card\' %}credit_expense{% else %}{{ tx.type }}{% endif %}', '{{ tx.date.strftime(\'%Y-%m-%d\') }}', '{{ tx.card_id or \'\' }}')"
+                        <button onclick="openEditModal('{{ tx.id }}', '{{ tx.description }}', '{{ tx.amount }}', '{{ tx.category_id }}', '{% if tx.card_id and tx.category and tx.category.name != "Credit Card" %}credit_expense{% else %}{{ tx.type }}{% endif %}', '{{ tx.date.strftime("%Y-%m-%d") }}', '{{ tx.card_id or "" }}')"
                                 class="p-2.5 text-slate-300 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm md:shadow-none border border-transparent hover:border-slate-100 active:scale-95">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
