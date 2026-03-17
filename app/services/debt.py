@@ -141,23 +141,6 @@ def calculate_monthly_totals(
         else:
             total_burn += payment
 
-    # --- MATH CLEANUP (After the loop) ---
-
-    # 1. total_due is the sum of what's paid and what's left
-    total_due = round(total_burn + total_paid, 2)
-
-    # 2. Calculate percentage based on actual totals calculated in the loop
-    percentage_paid = 0
-    if total_due > 0:
-        percentage_paid = round((total_paid / total_due) * 100)
-
-    # Trend Analysis Logic
-    burn_down = get_debt_burn_down(db_session, months_to_forecast=4, user_id=user_id)
-    three_months_out = burn_down[3]
-    future_total = three_months_out["total"]
-    savings_delta = total_due - future_total
-    percent_drop = round((savings_delta / total_due * 100)) if total_due > 0 else 0
-
     # --- ADD LOANS & CASHFLOW AGGREGATES ---
     cc_category = db_session.query(Category).filter(Category.name == "Credit Card").first()
     cc_cat_id = cc_category.id if cc_category else -1
@@ -211,7 +194,7 @@ def calculate_monthly_totals(
                         "id": c_id,
                         "total": 0,
                         "status": "PAID" if item_is_paid else "PENDING",
-                        "color": loan.card.color,
+                        "color": loan.card.color if loan.card else "#94a3b8",
                     }
 
                 target_collection[card_name]["total"] += monthly_payment
@@ -223,18 +206,36 @@ def calculate_monthly_totals(
                 
                 # Add to active items for summary display
                 loan.is_paid_current = item_is_paid
-                # We can mock the payee attribute so it looks like an installment in the summary
-                if not getattr(loan, 'payee', None):
-                    class MockPayee:
-                        name = "Loan (Credit to Cash)"
-                    loan.payee = MockPayee()
+                
+                # Dynamically add a payee attribute for the template if it doesn't exist
+                if not hasattr(loan, 'payee') or loan.payee is None:
+                    from types import SimpleNamespace
+                    loan.payee = SimpleNamespace(name="Loan (Credit)")
+                
                 active_items.append(loan)
             else:
                 loan_unlinked_total += monthly_payment
 
+    # --- MATH CLEANUP (Final Totals) ---
+
+    # 1. total_due is the sum of what's paid and what's left
+    total_due = round(total_burn + total_paid, 2)
+
+    # 2. Calculate percentage based on actual totals calculated in the loop
+    percentage_paid = 0
+    if total_due > 0:
+        percentage_paid = round((total_paid / total_due) * 100)
+
+    # Trend Analysis Logic
+    burn_down = get_debt_burn_down(db_session, months_to_forecast=4, user_id=user_id)
+    three_months_out = burn_down[3]
+    future_total = three_months_out["total"]
+    savings_delta = total_due - future_total
+    percent_drop = round((savings_delta / total_due * 100)) if total_due > 0 else 0
+
     # Total Remaining Aggregate (What's still due or already spent this month)
-    # We use loan_unlinked_total here because total_burn/total_paid already accounts for linked loans
-    aggregate_monthly_payment = cashflow_regular_expense_total + total_burn + total_paid + loan_unlinked_total
+    # Remaining Payment = Regular Expenses + Unpaid Credit Items + Unlinked Loans
+    aggregate_monthly_payment = cashflow_regular_expense_total + total_burn + loan_unlinked_total
 
     return {
         "total_burn": round(total_burn, 2),
@@ -413,13 +414,13 @@ def get_freedom_date(db_session, user_id=None):
     if not items and not loans:
         return "No active debt"
         
-    max_date = None
+    dates = []
     if items:
-        max_date = max(item.end_date for item in items)
-    
+        dates.extend([i.end_date for i in items if i.end_date])
     if loans:
-        loan_max = max(loan.end_date for loan in loans)
-        if max_date is None or loan_max > max_date:
-            max_date = loan_max
+        dates.extend([l.end_date for l in loans if l.end_date])
             
-    return max_date.strftime("%B %Y")
+    if not dates:
+        return "No active debt"
+        
+    return max(dates).strftime("%B %Y")

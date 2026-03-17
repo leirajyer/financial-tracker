@@ -97,36 +97,20 @@ async def index(
     today = date.today()
     cur_y, cur_m = today.year, today.month
     
-    # 1. Installment Stats
-    stats = calculate_monthly_totals(db, user_id=user.id)
+    # 1. Fetch Summary Stats and Combined Items
+    stats = calculate_monthly_totals(
+        db, 
+        user_id=user.id, 
+        card_id=card_id, 
+        payee_id=payee_id
+    )
     
-    # 2. Cashflow Expense Total for current month
-    # We separate regular expenses from credit card payments to avoid double counting in the aggregate
-    cc_category = db.query(Category).filter(Category.name == "Credit Card").first()
-    cc_cat_id = cc_category.id if cc_category else -1
+    # 2. Extract specific totals for readability
+    loan_total_monthly = stats["loan_total_monthly"]
+    loan_unlinked_total = stats["loan_unlinked_total"]
+    aggregate_monthly_payment = stats["aggregate_monthly_payment"]
+    cashflow_expense_total = stats["cashflow_expense_total"]
 
-    all_cashflow_expenses = db.query(CashFlow).filter(
-        CashFlow.owner_id == user.id,
-        CashFlow.type == "expense",
-        extract("year", CashFlow.date) == cur_y,
-        extract("month", CashFlow.date) == cur_m
-    ).all()
-
-    cashflow_expense_total = sum(cat.amount for cat in all_cashflow_expenses)
-    cashflow_cc_payment_total = sum(cat.amount for cat in all_cashflow_expenses if cat.category_id == cc_cat_id)
-    cashflow_regular_expense_total = cashflow_expense_total - cashflow_cc_payment_total
-    
-    # 3. Loan Total for current month
-    loans = db.query(Loan).filter(Loan.owner_id == user.id, Loan.status == "active").all()
-    loan_total_monthly = 0.0
-    target_dt = date(cur_y, cur_m, 1)
-    for loan in loans:
-        if loan.start_date <= target_dt <= loan.end_date:
-            loan_total_monthly += loan.monthly_payment
-
-    # Aggregate Remaining Payment (Remaining Dues = Unpaid Installments + Scheduled Loans + Regular Expenses)
-    aggregate_monthly_payment = cashflow_regular_expense_total + stats["total_burn"] + loan_total_monthly
-    
     recent_cashflow = (
         db.query(CashFlow)
         .filter(CashFlow.owner_id == user.id)
@@ -135,16 +119,8 @@ async def index(
         .all()
     )
 
-    # Filtered Installments
-    inst_query = db.query(Installment).filter(Installment.owner_id == user.id, Installment.status == "active")
-    if card_id:
-        inst_query = inst_query.filter(Installment.card_id == card_id)
-    if payee_id:
-        inst_query = inst_query.filter(Installment.payee_id == payee_id)
-    if category_id:
-        inst_query = inst_query.filter(Installment.category_id == category_id)
-    
-    active_installments = inst_query.all()
+    # Use the combined items list for the dashboard summary
+    active_installments = stats["items"]
 
     # Dropdowns for filters
     cards = db.query(Card).filter(Card.owner_id == user.id).all()
