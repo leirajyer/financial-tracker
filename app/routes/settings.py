@@ -11,10 +11,10 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 async def settings_page(request: Request, db: Session = Depends(get_db)):
     user = request.state.user
     cards = db.query(Card).filter(Card.owner_id == user.id).order_by(Card.name).all()
-    payees = db.query(Payee).filter(or_(Payee.owner_id == user.id, Payee.owner_id == None)).order_by(Payee.name).all()
+    payees = db.query(Payee).filter(or_(Payee.owner_id == user.id, Payee.owner_id.is_(None))).order_by(Payee.name).all()
     
     # Deduplicate categories by name, prioritizing user-owned ones
-    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).order_by(Category.name).all()
+    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id.is_(None))).order_by(Category.name).all()
     cat_dict = {}
     for cat in all_cats:
         if cat.name not in cat_dict or cat.owner_id is not None:
@@ -77,7 +77,7 @@ async def add_category(
 
     existing = db.query(Category).filter(
         Category.name == name, 
-        or_(Category.owner_id == user.id, Category.owner_id == None)
+        or_(Category.owner_id == user.id, Category.owner_id.is_(None))
     ).first()
     
     if existing:
@@ -103,7 +103,7 @@ async def add_payee(request: Request, name: str = Form(...), db: Session = Depen
 
     existing = db.query(Payee).filter(
         Payee.name == name,
-        or_(Payee.owner_id == user.id, Payee.owner_id == None)
+        or_(Payee.owner_id == user.id, Payee.owner_id.is_(None))
     ).first()
     
     if existing:
@@ -297,7 +297,7 @@ async def edit_category(
     if new_name != cat.name:
         existing = db.query(Category).filter(
             Category.name == new_name, 
-            or_(Category.owner_id == user.id, Category.owner_id == None)
+            or_(Category.owner_id == user.id, Category.owner_id.is_(None))
         ).first()
         if existing:
             return _error_response(request, f"Category '{new_name}' already exists")
@@ -330,7 +330,7 @@ async def edit_payee(
     if new_name != payee.name:
         existing = db.query(Payee).filter(
             Payee.name == new_name,
-            or_(Payee.owner_id == user.id, Payee.owner_id == None)
+            or_(Payee.owner_id == user.id, Payee.owner_id.is_(None))
         ).first()
         if existing:
             return _error_response(request, f"Payee '{new_name}' already exists")

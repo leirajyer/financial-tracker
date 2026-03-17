@@ -3,8 +3,14 @@
     <div class="px-4 py-3 flex justify-between items-center">
         <div>
             <p class="text-xs font-black text-slate-800">{{ item.description }}</p>
-            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{{ item.date.strftime('%b %d') }}
-            </p>
+            <div class="flex items-center gap-2 mt-0.5">
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{{ item.date.strftime('%b %d') }}</p>
+                {% if item.card %}
+                <span class="text-[8px] font-black px-1 py-0.5 bg-indigo-50 text-indigo-500 rounded uppercase tracking-widest border border-indigo-100">
+                    {{ item.card.name }}
+                </span>
+                {% endif %}
+            </div>
         </div>
         <span class="text-xs font-black {{ 'text-emerald-600' if item.type == 'income' else 'text-rose-500' }}">
             {{ '+' if item.type == 'income' else '-' }}₱{{ "{:,.2f}".format(item.amount) }}

@@ -27,7 +27,7 @@ async def list_loans(request: Request, db: Session = Depends(get_db)):
     active_loans = [loan for loan in loans if loan.status == "active"]
     
     # Deduplicate categories by name, prioritizing user-owned ones
-    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).order_by(Category.name).all()
+    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id.is_(None))).order_by(Category.name).all()
     cat_dict = {}
     for cat in all_cats:
         if cat.name not in cat_dict or cat.owner_id is not None:
@@ -54,7 +54,7 @@ async def list_loans(request: Request, db: Session = Depends(get_db)):
 async def add_loan_form(request: Request, db: Session = Depends(get_db)):
     user = request.state.user
     # Deduplicate categories by name, prioritizing user-owned ones
-    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).order_by(Category.name).all()
+    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id.is_(None))).order_by(Category.name).all()
     cat_dict = {}
     for cat in all_cats:
         if cat.name not in cat_dict or cat.owner_id is not None:

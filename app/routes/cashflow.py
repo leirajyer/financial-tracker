@@ -70,7 +70,7 @@ async def show_all_cashflow(
     transactions = query.order_by(CashFlow.date.desc()).all()
     
     # Categories: show user's categories or global ones (though we should migrate to user-only)
-    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).order_by(Category.name).all()
+    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id.is_(None))).order_by(Category.name).all()
     cat_dict = {}
     for cat in all_cats:
         if cat.name not in cat_dict or cat.owner_id is not None:
@@ -111,7 +111,7 @@ async def add_cashflow_form(request: Request, db: Session = Depends(get_db)):
     from app.services.debt import calculate_monthly_totals
     stats = calculate_monthly_totals(db, user_id=user.id)
     
-    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).order_by(Category.name).all()
+    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id.is_(None))).order_by(Category.name).all()
     cat_dict = {}
     for cat in all_cats:
         if cat.name not in cat_dict or cat.owner_id is not None:
