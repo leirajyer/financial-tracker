@@ -67,7 +67,7 @@ def calculate_monthly_totals(
             
             # CRITICAL FIX: If the card was marked as PAID, but this SPECIFIC installment 
             # was added AFTER the payment occurred, it should stay PENDING.
-            if item_is_paid and status_obj and status_obj.paid_at:
+            if item_is_paid and status_obj and status_obj.paid_at and item.created_at:
                 if item.created_at > status_obj.paid_at:
                     item_is_paid = False
             
@@ -99,7 +99,7 @@ def calculate_monthly_totals(
     # Fetch all cashflows for this month that are tied to a card
     swipes_query = db_session.query(CashFlow).options(joinedload(CashFlow.card)).filter(
         CashFlow.owner_id == user_id,
-        CashFlow.card_id != None,
+        CashFlow.card_id.is_not(None),
         extract("year", CashFlow.date) == yr,
         extract("month", CashFlow.date) == mo
     )
@@ -108,6 +108,9 @@ def calculate_monthly_totals(
     
     for swipe in swipes:
         card = swipe.card
+        if not card:
+            continue
+            
         c_id = card.id
         card_name = card.name
         payment = swipe.amount
@@ -117,7 +120,7 @@ def calculate_monthly_totals(
         item_is_paid = status_obj.is_paid if status_obj else False
         
         # CRITICAL: If the card was paid but swipe happened AFTER, it's pending
-        if item_is_paid and status_obj and status_obj.paid_at:
+        if item_is_paid and status_obj and status_obj.paid_at and swipe.created_at:
             if swipe.created_at > status_obj.paid_at:
                 item_is_paid = False
         
