@@ -116,6 +116,7 @@ async def add_installment_form(request: Request, db: Session = Depends(get_db)):
         {"label": "Straight", "value": 1},
         {"label": "3 Months", "value": 3},
         {"label": "6 Months", "value": 6},
+        {"label": "9 Months", "value": 9},
         {"label": "12 Months (1 year)", "value": 12},
         {"label": "24 Months (2 years)", "value": 24},
         {"label": "36 Months (3 years)", "value": 36},
