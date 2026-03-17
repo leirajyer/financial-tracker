@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Form, Request, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from fastapi.responses import RedirectResponse, Response
 from app.database import get_db
 from app.models import Card, Category, Payee, Installment, CashFlow
@@ -49,7 +49,7 @@ async def add_card(
     if not name:
         return _error_response(request, "Card name cannot be empty")
     
-    existing = db.query(Card).filter(Card.name == name, Card.owner_id == user.id).first()
+    existing = db.query(Card).filter(func.lower(Card.name) == name.lower(), Card.owner_id == user.id).first()
     if existing:
         return _error_response(request, f"Card '{name}' already exists")
     
@@ -76,7 +76,7 @@ async def add_category(
         return _error_response(request, "Category name cannot be empty")
 
     existing = db.query(Category).filter(
-        Category.name == name, 
+        func.lower(Category.name) == name.lower(), 
         or_(Category.owner_id == user.id, Category.owner_id.is_(None))
     ).first()
     
@@ -102,7 +102,7 @@ async def add_payee(request: Request, name: str = Form(...), db: Session = Depen
         return _error_response(request, "Payee name cannot be empty")
 
     existing = db.query(Payee).filter(
-        Payee.name == name,
+        func.lower(Payee.name) == name.lower(),
         or_(Payee.owner_id == user.id, Payee.owner_id.is_(None))
     ).first()
     
@@ -149,6 +149,7 @@ async def delete_card(request: Request, id: int, db: Session = Depends(get_db)):
     return response
 
 
+@router.delete("/delete-category/{id}")
 @router.post("/delete-category/{id}")
 async def delete_category(request: Request, id: int, db: Session = Depends(get_db)):
     user = request.state.user
@@ -248,7 +249,7 @@ async def edit_card(
 
     # If the name is changing, check for duplicates
     if new_name != card.name:
-        existing = db.query(Card).filter(Card.name == new_name, Card.owner_id == user.id).first()
+        existing = db.query(Card).filter(func.lower(Card.name) == new_name.lower(), Card.owner_id == user.id).first()
         if existing:
             return _error_response(request, f"Card '{new_name}' already exists")
 
@@ -296,7 +297,7 @@ async def edit_category(
 
     if new_name != cat.name:
         existing = db.query(Category).filter(
-            Category.name == new_name, 
+            func.lower(Category.name) == new_name.lower(), 
             or_(Category.owner_id == user.id, Category.owner_id.is_(None))
         ).first()
         if existing:
@@ -329,7 +330,7 @@ async def edit_payee(
 
     if new_name != payee.name:
         existing = db.query(Payee).filter(
-            Payee.name == new_name,
+            func.lower(Payee.name) == new_name.lower(),
             or_(Payee.owner_id == user.id, Payee.owner_id.is_(None))
         ).first()
         if existing:
