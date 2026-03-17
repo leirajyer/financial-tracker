@@ -70,7 +70,12 @@ async def show_all_cashflow(
     transactions = query.order_by(CashFlow.date.desc()).all()
     
     # Categories: show user's categories or global ones (though we should migrate to user-only)
-    categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
+    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).order_by(Category.name).all()
+    cat_dict = {}
+    for cat in all_cats:
+        if cat.name not in cat_dict or cat.owner_id is not None:
+            cat_dict[cat.name] = cat
+    categories = sorted(cat_dict.values(), key=lambda x: x.name)
     cards = db.query(Card).filter(Card.owner_id == user.id).order_by(Card.name).all()
 
     total_income = sum(t.amount for t in transactions if t.type == "income")
@@ -106,7 +111,13 @@ async def add_cashflow_form(request: Request, db: Session = Depends(get_db)):
     from app.services.debt import calculate_monthly_totals
     stats = calculate_monthly_totals(db, user_id=user.id)
     
-    categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
+    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).order_by(Category.name).all()
+    cat_dict = {}
+    for cat in all_cats:
+        if cat.name not in cat_dict or cat.owner_id is not None:
+            cat_dict[cat.name] = cat
+    categories = sorted(cat_dict.values(), key=lambda x: x.name)
+    
     cards = db.query(Card).filter(Card.owner_id == user.id).order_by(Card.name).all()
     current_date = date.today().strftime("%Y-%m-%d")
 
