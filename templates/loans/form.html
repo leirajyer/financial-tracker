@@ -30,7 +30,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Terms -->
             <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Payment Term</label>
@@ -52,6 +52,18 @@
                     class="w-full p-5 bg-slate-50 border-none rounded-xl font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-indigo-500 transition-all appearance-none">
                     {% for cat in categories %}
                     <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Card -->
+            <div>
+                <label class="block text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3 ml-1">Linked Card (Optional)</label>
+                <select name="card_id"
+                    class="w-full p-5 bg-indigo-50/30 border-none rounded-xl font-bold text-indigo-600 cursor-pointer focus:ring-2 focus:ring-indigo-500 transition-all appearance-none">
+                    <option value="">None / External</option>
+                    {% for card in cards %}
+                    <option value="{{ card.id }}">{{ card.name }}</option>
                     {% endfor %}
                 </select>
             </div>

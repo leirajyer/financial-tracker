@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.database import get_db
-from app.models import Loan, Category
+from app.models import Loan, Category, Card
 from app.core.ui import render_template
+from sqlalchemy.orm import joinedload
 
 router = APIRouter(prefix="/loans", tags=["Loans"])
 
@@ -17,6 +18,7 @@ async def list_loans(request: Request, db: Session = Depends(get_db)):
     loans = (
         db.query(Loan)
         .filter(Loan.owner_id == user.id)
+        .options(joinedload(Loan.card))
         .order_by(Loan.start_date.desc())
         .all()
     )
@@ -53,6 +55,7 @@ async def list_loans(request: Request, db: Session = Depends(get_db)):
 @router.get("/add", response_class=HTMLResponse)
 async def add_loan_form(request: Request, db: Session = Depends(get_db)):
     user = request.state.user
+    cards = db.query(Card).filter(Card.owner_id == user.id).order_by(Card.name).all()
     # Deduplicate categories by name, prioritizing user-owned ones
     all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id.is_(None))).order_by(Category.name).all()
     cat_dict = {}
@@ -77,6 +80,7 @@ async def add_loan_form(request: Request, db: Session = Depends(get_db)):
         request,
         {
             "categories": categories,
+            "cards": cards,
             "terms_options": terms_options,
             "today": date.today().strftime("%Y-%m-%d"),
             **stats
@@ -92,6 +96,7 @@ async def create_loan(
     terms: int = Form(...),
     category_id: int = Form(...),
     start_date_str: str = Form(..., alias="start_date"),
+    card_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
 ):
     user = request.state.user
@@ -104,6 +109,7 @@ async def create_loan(
         terms_years=terms,
         category_id=category_id,
         start_date=start_date,
+        card_id=card_id,
         owner_id=user.id,
         status="active"
     )

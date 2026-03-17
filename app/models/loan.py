@@ -31,6 +31,9 @@ class Loan(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("app.models.user.User", backref="loans")
 
+    card_id = Column(Integer, ForeignKey("cards.id"), nullable=True)
+    card = relationship("app.models.card.Card", backref="loans")
+
     def calculate_payment(self):
         """Calculates monthly payment using standard loan amortization formula."""
         if not self.amount or not self.terms_years:
