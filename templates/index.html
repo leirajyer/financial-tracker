@@ -25,17 +25,17 @@
         <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between min-h-[140px]">
             <div>
                 <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Remaining Liability Dues</p>
-                <p class="text-2xl font-black text-slate-800 tracking-tight">₱{{ "{:,.2f}".format(total_burn + loan_total_monthly) }}</p>
+                <p class="text-2xl font-black text-slate-800 tracking-tight">₱{{ "{:,.2f}".format(total_burn + loan_unlinked_total) }}</p>
             </div>
             <div class="flex items-center gap-3 mt-4">
                 <div class="flex flex-col">
-                    <span class="text-[8px] font-black text-slate-400 uppercase">Remaining Inst.</span>
+                    <span class="text-[8px] font-black text-slate-400 uppercase">Credit (Inst+Swipes+Loans)</span>
                     <span class="text-[10px] font-bold text-slate-600">₱{{ "{:,.0f}".format(total_burn) }}</span>
                 </div>
                 <div class="w-px h-6 bg-slate-100"></div>
                 <div class="flex flex-col">
-                    <span class="text-[8px] font-black text-slate-400 uppercase">Loans</span>
-                    <span class="text-[10px] font-bold text-slate-600">₱{{ "{:,.0f}".format(loan_total_monthly) }}</span>
+                    <span class="text-[8px] font-black text-slate-400 uppercase">External Loans</span>
+                    <span class="text-[10px] font-bold text-slate-600">₱{{ "{:,.0f}".format(loan_unlinked_total) }}</span>
                 </div>
             </div>
         </div>

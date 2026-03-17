@@ -183,14 +183,58 @@ def calculate_monthly_totals(
 
     cashflow_regular_expense_total = cashflow_expense_total - cashflow_cc_payment_total
 
-    loans = db_session.query(Loan).filter(Loan.owner_id == user_id, Loan.status == "active").all()
+    loans = db_session.query(Loan).options(joinedload(Loan.card)).filter(Loan.owner_id == user_id, Loan.status == "active").all()
     loan_total_monthly = 0.0
+    loan_unlinked_total = 0.0
     for loan in loans:
         if loan.start_date <= target_date <= loan.end_date:
-            loan_total_monthly += loan.monthly_payment
+            monthly_payment = loan.monthly_payment or 0.0
+            loan_total_monthly += monthly_payment
+            
+            # If tied to a card, add to card totals
+            if loan.card_id:
+                c_id = loan.card_id
+                card_name = loan.card.name
+                
+                status_obj = paid_status_map.get(c_id)
+                item_is_paid = status_obj.is_paid if status_obj else False
+                
+                # Check creation date logic for late-added loans (similar to installments)
+                if item_is_paid and status_obj and status_obj.paid_at and loan.created_at:
+                    if loan.created_at > status_obj.paid_at:
+                        item_is_paid = False
+
+                target_collection = paid_cards if item_is_paid else pending_cards
+
+                if card_name not in target_collection:
+                    target_collection[card_name] = {
+                        "id": c_id,
+                        "total": 0,
+                        "status": "PAID" if item_is_paid else "PENDING",
+                        "color": loan.card.color,
+                    }
+
+                target_collection[card_name]["total"] += monthly_payment
+
+                if item_is_paid:
+                    total_paid += monthly_payment
+                else:
+                    total_burn += monthly_payment
+                
+                # Add to active items for summary display
+                loan.is_paid_current = item_is_paid
+                # We can mock the payee attribute so it looks like an installment in the summary
+                if not getattr(loan, 'payee', None):
+                    class MockPayee:
+                        name = "Loan (Credit to Cash)"
+                    loan.payee = MockPayee()
+                active_items.append(loan)
+            else:
+                loan_unlinked_total += monthly_payment
 
     # Total Remaining Aggregate (What's still due or already spent this month)
-    aggregate_monthly_payment = cashflow_regular_expense_total + total_burn + loan_total_monthly
+    # We use loan_unlinked_total here because total_burn/total_paid already accounts for linked loans
+    aggregate_monthly_payment = cashflow_regular_expense_total + total_burn + total_paid + loan_unlinked_total
 
     return {
         "total_burn": round(total_burn, 2),
@@ -209,6 +253,7 @@ def calculate_monthly_totals(
         "percent_drop": percent_drop,
         "avg_monthly_burn": round(total_due, 2),
         "loan_total_monthly": loan_total_monthly,
+        "loan_unlinked_total": loan_unlinked_total,
         "cashflow_expense_total": cashflow_expense_total,
         "cashflow_regular_expense_total": cashflow_regular_expense_total,
         "aggregate_monthly_payment": aggregate_monthly_payment,
@@ -247,14 +292,16 @@ def get_monthly_forecast(db, year, month, card_id=None, payee_id=None, user_id=N
         joinedload(Installment.card), joinedload(Installment.payee)
     )
 
-    if user_id:
-        query = query.filter(Installment.owner_id == user_id)
-    if card_id:
-        query = query.filter(Installment.card_id == card_id)
-    if payee_id:
-        query = query.filter(Installment.payee_id == payee_id)
-
     all_items = query.all()
+
+    # Fetch loans as well
+    loan_query = db.query(Loan).options(joinedload(Loan.card))
+    if user_id:
+        loan_query = loan_query.filter(Loan.owner_id == user_id)
+    if card_id:
+        loan_query = loan_query.filter(Loan.card_id == card_id)
+    
+    all_loans = loan_query.all()
 
     active_items = []
     total_due = 0.0
@@ -275,6 +322,21 @@ def get_monthly_forecast(db, year, month, card_id=None, payee_id=None, user_id=N
                 card_data[c_name] = {"total": 0.0, "id": c_id, "status": status}
 
             card_data[c_name]["total"] += item.monthly_payment
+
+    # 3. Process loans and group by Card
+    for loan in all_loans:
+        if loan.start_date <= target_date <= loan.end_date:
+            total_due += loan.monthly_payment
+            
+            if loan.card_id:
+                c_name = loan.card.name
+                c_id = loan.card_id
+                
+                if c_name not in card_data:
+                    status = get_card_status(db, c_id, year, month)
+                    card_data[c_name] = {"total": 0.0, "id": c_id, "status": status}
+                
+                card_data[c_name]["total"] += loan.monthly_payment
 
     return {
         "items": active_items,
@@ -306,10 +368,13 @@ def get_debt_burn_down(db_session, months_to_forecast=12, user_id=None):
     forecast = []
     
     query = db_session.query(Installment)
+    loan_query = db_session.query(Loan).filter(Loan.status == "active")
     if user_id:
         query = query.filter(Installment.owner_id == user_id)
+        loan_query = loan_query.filter(Loan.owner_id == user_id)
     
     items = query.all()
+    loans = loan_query.all()
 
     for i in range(months_to_forecast):
         target_month = (today.month + i - 1) % 12 + 1
@@ -321,6 +386,12 @@ def get_debt_burn_down(db_session, months_to_forecast=12, user_id=None):
             for item in items
             if item.start_date <= target_date <= item.end_date
         )
+        
+        monthly_total += sum(
+            loan.monthly_payment
+            for loan in loans
+            if loan.start_date <= target_date <= loan.end_date
+        )
 
         forecast.append(
             {"month": target_date.strftime("%b %Y"), "total": round(monthly_total, 2)}
@@ -331,10 +402,24 @@ def get_debt_burn_down(db_session, months_to_forecast=12, user_id=None):
 def get_freedom_date(db_session, user_id=None):
     """Day 10: Finds the furthest end_date for the 'Freedom' milestone."""
     query = db_session.query(Installment)
+    loan_query = db_session.query(Loan).filter(Loan.status == "active")
     if user_id:
         query = query.filter(Installment.owner_id == user_id)
+        loan_query = loan_query.filter(Loan.owner_id == user_id)
         
     items = query.all()
-    if not items:
+    loans = loan_query.all()
+    
+    if not items and not loans:
         return "No active debt"
-    return max(item.end_date for item in items).strftime("%B %Y")
+        
+    max_date = None
+    if items:
+        max_date = max(item.end_date for item in items)
+    
+    if loans:
+        loan_max = max(loan.end_date for loan in loans)
+        if max_date is None or loan_max > max_date:
+            max_date = loan_max
+            
+    return max_date.strftime("%B %Y")
