@@ -148,8 +148,15 @@ async def index(
 
     # Dropdowns for filters
     cards = db.query(Card).filter(Card.owner_id == user.id).all()
-    payees = db.query(Payee).filter(Payee.owner_id == user.id).all()
-    categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
+    payees = db.query(Payee).filter(or_(Payee.owner_id == user.id, Payee.owner_id.is_(None))).order_by(Payee.name).all()
+    
+    # Deduplicate categories by name, prioritizing user-owned ones
+    all_cats = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id.is_(None))).order_by(Category.name).all()
+    cat_dict = {}
+    for cat in all_cats:
+        if cat.name not in cat_dict or cat.owner_id is not None:
+            cat_dict[cat.name] = cat
+    categories = sorted(cat_dict.values(), key=lambda x: x.name)
 
     from app.core.ui import render_template
     return render_template(

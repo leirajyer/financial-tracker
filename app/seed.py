@@ -22,7 +22,7 @@ def seed_db():
         for cat_data in basic_categories:
             existing = db.query(Category).filter(
                 Category.name == cat_data["name"], 
-                Category.owner_id == None
+                Category.owner_id.is_(None)
             ).first()
             if not existing:
                 db.add(Category(**cat_data, owner_id=None))
@@ -33,7 +33,7 @@ def seed_db():
         ]
 
         # Migration: Rename "Rey (Owner)" to "Owner" if found
-        rey_owner = db.query(Payee).filter(Payee.name == "Rey (Owner)", Payee.owner_id == None).first()
+        rey_owner = db.query(Payee).filter(Payee.name == "Rey (Owner)", Payee.owner_id.is_(None)).first()
         if rey_owner:
             rey_owner.name = "Owner"
             db.commit()
@@ -41,7 +41,7 @@ def seed_db():
         for payee_name in default_payees:
             existing_payee = db.query(Payee).filter(
                 Payee.name == payee_name,
-                Payee.owner_id == None
+                Payee.owner_id.is_(None)
             ).first()
             if not existing_payee:
                 db.add(Payee(name=payee_name, owner_id=None))

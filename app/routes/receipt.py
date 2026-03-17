@@ -31,7 +31,7 @@ async def scan_receipt(
 
     # Load user's categories for context
     categories = db.query(Category).filter(
-        or_(Category.owner_id == user.id, Category.owner_id == None)
+        or_(Category.owner_id == user.id, Category.owner_id.is_(None))
     ).all()
     category_names = [c.name for c in categories]
 
