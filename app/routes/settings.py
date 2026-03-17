@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from fastapi.responses import RedirectResponse, Response
 from app.database import get_db
-from app.models import Card, Category, Payee, Installment, CashFlow
+from app.models import Card, Category, Payee, Installment, CashFlow, Loan
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -351,3 +351,31 @@ def _error_response(request: Request, message: str):
     msg = message if message.startswith("Error:") else f"Error: {message}"
     response.set_cookie(key="toast_msg", value=msg)
     return response
+
+@router.post("/clean-slate")
+async def clean_slate(
+    request: Request,
+    verify_code: str = Form(...),
+    expected_code: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = request.state.user
+    
+    # 1. Verify the code
+    if verify_code != expected_code:
+        return _error_response(request, "Invalid verification code.")
+    
+    try:
+        # 2. Delete all user records for Cashflow, Installments, and Loans
+        db.query(CashFlow).filter(CashFlow.owner_id == user.id).delete()
+        db.query(Installment).filter(Installment.owner_id == user.id).delete()
+        db.query(Loan).filter(Loan.owner_id == user.id).delete()
+        
+        db.commit()
+        
+        response = RedirectResponse(url="/?msg=data_cleared", status_code=303)
+        response.set_cookie(key="toast_msg", value="Success: All data has been wiped.")
+        return response
+    except Exception as e:
+        db.rollback()
+        return _error_response(request, f"Failed to clear data: {str(e)}")

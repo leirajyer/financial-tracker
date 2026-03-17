@@ -25,6 +25,11 @@
             <button onclick="showSection('categories')" id="tab-categories" class="w-full text-left px-5 py-4 bg-white text-slate-600 hover:bg-slate-50 font-bold rounded-xl transition-all tab-btn border border-transparent">
                 <span class="mr-3 text-lg">🏷️</span> Categories
             </button>
+            <div class="pt-4 mt-4 border-t border-slate-100">
+                <button onclick="showSection('reset')" id="tab-reset" class="w-full text-left px-5 py-4 bg-white text-rose-400 hover:bg-rose-50 font-bold rounded-xl transition-all tab-btn border border-transparent">
+                    <span class="mr-3 text-lg">⚠️</span> Clean Slate
+                </button>
+            </div>
         </aside>
 
         <!-- Main Content area -->
@@ -158,6 +163,39 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Clean Slate Section -->
+            <div id="section-reset" class="settings-section space-y-8 animate-fade-in hidden">
+                <header>
+                    <h3 class="font-black text-rose-600 text-2xl flex items-center gap-3">
+                        <span class="p-3 bg-rose-50 rounded-xl text-xl">⚠️</span>
+                        Clean Slate
+                    </h3>
+                    <p class="text-xs text-slate-400 font-bold mt-2 text-balance leading-relaxed">
+                        This will permanently delete ALL your <span class="text-slate-800">Cashflow Records</span>, 
+                        <span class="text-slate-800">Installments</span>, and <span class="text-slate-800">Loans</span>. 
+                        Your Credit Cards, Payees, and Categories will be kept.
+                    </p>
+                </header>
+
+                <div class="bg-rose-50/50 border border-rose-100 p-8 rounded-2xl space-y-6">
+                    <div class="text-center">
+                        <label class="block text-[10px] font-black text-rose-400 uppercase tracking-widest mb-4">Verification Code</label>
+                        <div id="reset-code-display" class="text-4xl font-black text-rose-600 tracking-[0.5em] mb-6 drop-shadow-sm">0000</div>
+                        
+                        <form action="/settings/clean-slate" method="POST" class="max-w-xs mx-auto space-y-4">
+                            <input type="hidden" name="expected_code" id="expected-code-input">
+                            <input type="text" name="verify_code" placeholder="Type the code above" required
+                                class="w-full px-6 py-4 bg-white border-2 border-rose-100 rounded-2xl text-center text-xl font-black text-slate-700 focus:border-rose-500 focus:ring-0 transition-all placeholder:text-slate-300">
+                            
+                            <button type="submit" 
+                                class="w-full py-4 bg-rose-600 text-white rounded-2xl font-black text-sm uppercase tracking-wider hover:bg-rose-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-rose-200">
+                                RESET ALL DATA
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -181,8 +219,9 @@
         // Reset all tabs
         const tabs = document.querySelectorAll('.tab-btn');
         tabs.forEach(tab => {
-            tab.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-100', 'shadow-sm', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-100', 'bg-purple-50', 'text-purple-700', 'border-purple-100');
+            tab.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-100', 'shadow-sm', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-100', 'bg-purple-50', 'text-purple-700', 'border-purple-100', 'bg-rose-50', 'text-rose-700', 'border-rose-100');
             tab.classList.add('bg-white', 'text-slate-600', 'border-transparent');
+            if (tab.id === 'tab-reset') tab.classList.add('text-rose-400');
         });
 
         // Show the target section
@@ -200,14 +239,24 @@
                 activeTab.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-100', 'shadow-sm');
             } else if (sectionName === 'categories') {
                 activeTab.classList.add('bg-purple-50', 'text-purple-700', 'border-purple-100', 'shadow-sm');
+            } else if (sectionName === 'reset') {
+                activeTab.classList.remove('text-rose-400');
+                activeTab.classList.add('bg-rose-50', 'text-rose-700', 'border-rose-100', 'shadow-sm');
+                generateResetCode();
             }
         }
     }
     // Auto-open tab from URL hash (e.g. /settings/#cards)
     const hash = window.location.hash.replace('#', '');
-    const validTabs = ['cards', 'payees', 'categories'];
+    const validTabs = ['cards', 'payees', 'categories', 'reset'];
     if (validTabs.includes(hash)) {
         showSection(hash);
+    }
+
+    function generateResetCode() {
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+        document.getElementById('reset-code-display').innerText = code;
+        document.getElementById('expected-code-input').value = code;
     }
 </script>
 {% endblock %}
