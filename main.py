@@ -30,7 +30,7 @@ from app.routes import (
 )
 
 from starlette.middleware.sessions import SessionMiddleware
-from app.core.auth import get_current_user, SECRET_KEY
+from app.core.auth import get_current_user, SECRET_KEY, RequiresLoginException, require_user
 
 from app.core.ui import templates
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
@@ -43,27 +43,9 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 # Required for Google OAuth state tracking
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
-# Middleware to add current_user to all template contexts
-@app.middleware("http")
-async def add_user_to_request(request: Request, call_next):
-    # Use a direct session to ensure it gets closed properly in finally block
-    db: Session = SessionLocal()
-    try:
-        user = await get_current_user(request, db)
-        request.state.user = user
-
-        # Public paths that don't require login
-        public_paths = ["/login", "/register", "/auth", "/static", "/favicon.ico"]
-        
-        is_public = any(request.url.path.startswith(path) for path in public_paths)
-        
-        if not user and not is_public:
-            return RedirectResponse(url="/login", status_code=303)
-            
-        response = await call_next(request)
-        return response
-    finally:
-        db.close()
+@app.exception_handler(RequiresLoginException)
+async def requires_login_exception_handler(request: Request, exc: RequiresLoginException):
+    return RedirectResponse(url="/login", status_code=303)
 
 # Standardize templates to always include current_user
 templates.env.globals["current_user"] = None # Placeholder
@@ -90,24 +72,24 @@ async def startup_event():
 
 
 # ... router includes ...
-app.include_router(installments_router)
-app.include_router(forecast_router)
-app.include_router(settings_router)
-app.include_router(cashflow_router)
+app.include_router(installments_router, dependencies=[Depends(require_user)])
+app.include_router(forecast_router, dependencies=[Depends(require_user)])
+app.include_router(settings_router, dependencies=[Depends(require_user)])
+app.include_router(cashflow_router, dependencies=[Depends(require_user)])
 app.include_router(auth_router)
-app.include_router(reports_router)
-app.include_router(loans_router)
+app.include_router(reports_router, dependencies=[Depends(require_user)])
+app.include_router(loans_router, dependencies=[Depends(require_user)])
 
 
 @app.get("/")
 async def index(
     request: Request, 
     db: Session = Depends(get_db),
+    user=Depends(require_user),
     card_id: Optional[int] = Query(None),
     payee_id: Optional[int] = Query(None),
     category_id: Optional[int] = Query(None),
 ):
-    user = request.state.user
     from datetime import date
     from sqlalchemy import extract, func
     from app.models import Loan, Card, Payee, Category

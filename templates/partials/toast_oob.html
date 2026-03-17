@@ -1,0 +1,24 @@
+<span id="nav-monthly-total" hx-swap-oob="true">
+    {% if total_val < 0.01 %}
+    <span class="text-emerald-400 font-bold animate-pulse">FULLY PAID 🎉</span>
+    {% else %}
+    ₱{{ "{:,.2f}".format(total_val) }}
+    {% endif %}
+</span>
+<span id="nav-remaining-total-mobile" hx-swap-oob="true">
+    {% if total_val < 0.01 %}
+    <span class="text-emerald-400 font-bold animate-pulse">FULLY PAID 🎉</span>
+    {% else %}
+    ₱{{ "{:,.2f}".format(total_val) }}
+    {% endif %}
+</span>
+
+{% if toast_msg %}
+<div id="toast-container" hx-swap-oob="true" _="on load wait 3s then remove me"
+     class="fixed bottom-5 right-5 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-opacity duration-500 z-50 [&:empty]:hidden">
+    <span class="text-lg">🎉</span>
+    <span class="font-bold text-sm">{{ toast_msg }}</span>
+</div>
+{% else %}
+<div id="toast-container" hx-swap-oob="true" class="hidden [&:empty]:hidden"></div>
+{% endif %}

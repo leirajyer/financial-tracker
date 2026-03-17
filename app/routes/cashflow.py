@@ -105,13 +105,14 @@ async def add_cashflow_form(request: Request, db: Session = Depends(get_db)):
     stats = calculate_monthly_totals(db, user_id=user.id)
     
     categories = db.query(Category).filter(or_(Category.owner_id == user.id, Category.owner_id == None)).all()
+    cards = db.query(Card).filter(Card.owner_id == user.id).order_by(Card.name).all()
     current_date = date.today().strftime("%Y-%m-%d")
 
     from app.core.ui import render_template
     return render_template(
         "cashflow/form.html",
         request,
-        {"categories": categories, "today": current_date, **stats},
+        {"categories": categories, "cards": cards, "today": current_date, **stats},
     )
 
 
@@ -123,6 +124,7 @@ async def create_cashflow(
     transaction_type: str = Form(..., alias="type"),
     category_id: int = Form(None),
     card_id: Optional[int] = Form(None),
+    expense_card_id: Optional[int] = Form(None),
     date_str: str = Form(None, alias="date"),
     db: Session = Depends(get_db),
 ):
@@ -132,21 +134,28 @@ async def create_cashflow(
     except ValueError:
         entry_date = date.today()
 
+    category = db.query(Category).filter(Category.id == category_id).first() if category_id else None
+    is_cc_payment = category and category.name == "Credit Card"
+    
+    # Resolving final card ID based on category
+    final_card_id = card_id if is_cc_payment else expense_card_id
+    if transaction_type != "expense":
+        final_card_id = None
+
     new_entry = CashFlow(
         description=description,
         amount=amount,
         type=transaction_type,
         category_id=category_id if category_id else None,
         date=entry_date,
-        owner_id=user.id
+        owner_id=user.id,
+        card_id=final_card_id
     )
 
     db.add(new_entry)
     
     # NEW: Automated Credit Card Payment Logic
-    if transaction_type == "expense" and card_id:
-        category = db.query(Category).filter(Category.id == category_id).first()
-        if category and category.name == "Credit Card":
+    if transaction_type == "expense" and is_cc_payment and final_card_id:
             month_year = f"{entry_date.year}-{entry_date.month:02d}"
             
             # Check if status exists
@@ -179,6 +188,8 @@ async def update_transaction(
     description: str = Form(...),
     amount: float = Form(...),
     category_id: int = Form(None),
+    card_id: Optional[int] = Form(None),
+    expense_card_id: Optional[int] = Form(None),
     transaction_type: str = Form(..., alias="type"),
     db: Session = Depends(get_db),
 ):
@@ -188,9 +199,17 @@ async def update_transaction(
     if not tx:
         return RedirectResponse(url="/cashflow/?error=not_found", status_code=303)
 
+    category = db.query(Category).filter(Category.id == category_id).first() if category_id else None
+    is_cc_payment = category and category.name == "Credit Card"
+    
+    final_card_id = card_id if is_cc_payment else expense_card_id
+    if transaction_type != "expense":
+        final_card_id = None
+
     tx.description = description.strip()
     tx.amount = abs(amount)
     tx.category_id = category_id if category_id else None
+    tx.card_id = final_card_id
     tx.type = transaction_type
 
     db.commit()

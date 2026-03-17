@@ -1,6 +1,6 @@
 from datetime import date
 from sqlalchemy.orm import joinedload
-from sqlalchemy import extract
+from sqlalchemy import extract, func
 from app.models import Installment, CardMonthlyStatus, Loan, CashFlow, Category
 import calendar
 
@@ -95,6 +95,49 @@ def calculate_monthly_totals(
             else:
                 total_burn += payment
 
+    # --- ADD DAILY SWIPES FROM CASHFLOW ---
+    # Fetch all cashflows for this month that are tied to a card
+    swipes_query = db_session.query(CashFlow).options(joinedload(CashFlow.card)).filter(
+        CashFlow.owner_id == user_id,
+        CashFlow.card_id != None,
+        extract("year", CashFlow.date) == yr,
+        extract("month", CashFlow.date) == mo
+    )
+    
+    swipes = swipes_query.all()
+    
+    for swipe in swipes:
+        card = swipe.card
+        c_id = card.id
+        card_name = card.name
+        payment = swipe.amount
+        
+        # Check payment status of the card
+        status_obj = paid_status_map.get(c_id)
+        item_is_paid = status_obj.is_paid if status_obj else False
+        
+        # CRITICAL: If the card was paid but swipe happened AFTER, it's pending
+        if item_is_paid and status_obj and status_obj.paid_at:
+            if swipe.created_at > status_obj.paid_at:
+                item_is_paid = False
+        
+        target_collection = paid_cards if item_is_paid else pending_cards
+
+        if card_name not in target_collection:
+            target_collection[card_name] = {
+                "id": c_id,
+                "total": 0,
+                "status": "PAID" if item_is_paid else "PENDING",
+                "color": card.color if card else "#94a3b8",
+            }
+
+        target_collection[card_name]["total"] += payment
+
+        if item_is_paid:
+            total_paid += payment
+        else:
+            total_burn += payment
+
     # --- MATH CLEANUP (After the loop) ---
 
     # 1. total_due is the sum of what's paid and what's left
@@ -116,15 +159,25 @@ def calculate_monthly_totals(
     cc_category = db_session.query(Category).filter(Category.name == "Credit Card").first()
     cc_cat_id = cc_category.id if cc_category else -1
 
-    all_cashflow_expenses = db_session.query(CashFlow).filter(
+    cashflow_aggregates = db_session.query(
+        CashFlow.category_id,
+        func.sum(CashFlow.amount)
+    ).filter(
         CashFlow.owner_id == user_id,
         CashFlow.type == "expense",
         extract("year", CashFlow.date) == yr,
         extract("month", CashFlow.date) == mo
-    ).all()
+    ).group_by(CashFlow.category_id).all()
 
-    cashflow_expense_total = sum(tx.amount for tx in all_cashflow_expenses)
-    cashflow_cc_payment_total = sum(tx.amount for tx in all_cashflow_expenses if tx.category_id == cc_cat_id)
+    cashflow_expense_total = 0.0
+    cashflow_cc_payment_total = 0.0
+
+    for cat_id, amount in cashflow_aggregates:
+        amount = amount or 0.0
+        cashflow_expense_total += amount
+        if cat_id == cc_cat_id:
+            cashflow_cc_payment_total += amount
+
     cashflow_regular_expense_total = cashflow_expense_total - cashflow_cc_payment_total
 
     loans = db_session.query(Loan).filter(Loan.owner_id == user_id, Loan.status == "active").all()
@@ -238,33 +291,10 @@ def get_global_updates_fragment(
         db, year, month, card_id=card_id, payee_id=payee_id, user_id=user_id
     )
     total_val = stats.get("total_burn", 0)
-    # Remaining Dues OOB updates
-    burn_display = f"₱{total_val:,.2f}"
-    if total_val < 0.01:
-        burn_display = '<span class="text-emerald-400 font-bold animate-pulse">FULLY PAID 🎉</span>'
 
-    fragments = []
-    # Update Desktop Nav
-    fragments.append(f'<span id="nav-monthly-total" hx-swap-oob="true">{burn_display}</span>')
-    # Update Mobile Nav
-    fragments.append(f'<span id="nav-remaining-total-mobile" hx-swap-oob="true">{burn_display}</span>')
-
-    # 2. Toast Fragment
-    if toast_msg:
-        fragments.append(f"""
-            <div id="toast-container" hx-swap-oob="true" _="on load wait 3s then remove me"
-                 class="fixed bottom-5 right-5 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-opacity duration-500 z-50 [&:empty]:hidden">
-                <span class="text-lg">🎉</span>
-                <span class="font-bold text-sm">{toast_msg}</span>
-            </div>
-        """)
-    else:
-        # Use hx-swap-oob to target the container and wipe its inner HTML AND classes
-        fragments.append(
-            '<div id="toast-container" hx-swap-oob="true" class="hidden [&:empty]:hidden"></div>'
-        )
-
-    return "".join(fragments)
+    from app.core.ui import templates
+    template = templates.get_template("partials/toast_oob.html")
+    return template.render({"total_val": total_val, "toast_msg": toast_msg})
 
 
 def get_debt_burn_down(db_session, months_to_forecast=12, user_id=None):

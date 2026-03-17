@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, ForeignKey, String, Float, Date
+from sqlalchemy import Column, Integer, ForeignKey, String, Float, Date, DateTime
 from sqlalchemy.orm import relationship
-from datetime import date
+from datetime import date, datetime as dt
 from .base import Base
 
 
@@ -15,9 +15,13 @@ class CashFlow(Base):
     type = Column(String)
     # ADD THIS: "date"
     date = Column(Date, default=date.today)
+    created_at = Column(DateTime, default=dt.now)
 
     category_id = Column(Integer, ForeignKey("categories.id"))
     category = relationship("app.models.category.Category", back_populates="cash_flows")
+
+    card_id = Column(Integer, ForeignKey("cards.id"), nullable=True)
+    card = relationship("app.models.card.Card", back_populates="cash_flows")
 
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("app.models.user.User", back_populates="cash_flows")

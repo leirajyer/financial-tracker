@@ -16,6 +16,7 @@ class Card(Base):
         "app.models.installment.Installment", back_populates="card"
     )
     monthly_statuses = relationship("CardMonthlyStatus", back_populates="card")
+    cash_flows = relationship("app.models.cashflow.CashFlow", back_populates="card")
 
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("app.models.user.User", back_populates="cards")

@@ -3,10 +3,14 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Request
+from fastapi import Request, Depends
 from sqlalchemy.orm import Session
 from app.models.user import User
+from app.database import get_db
 from authlib.integrations.starlette_client import OAuth
+
+class RequiresLoginException(Exception):
+    pass
 
 # Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
@@ -72,4 +76,11 @@ async def get_current_user(request: Request, db: Session):
         return None
         
     user = db.query(User).filter(User.username == username).first()
+    return user
+
+async def require_user(request: Request, db: Session = Depends(get_db)):
+    user = await get_current_user(request, db)
+    if not user:
+        raise RequiresLoginException("Not authenticated")
+    request.state.user = user
     return user

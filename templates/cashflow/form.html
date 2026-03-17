@@ -46,7 +46,8 @@
                 <div class="flex flex-wrap gap-2">
                     {% for cat in categories %}
                     <label class="cursor-pointer">
-                        <input type="radio" name="category_id" value="{{ cat.id }}" class="peer sr-only"
+                        <input type="radio" name="category_id" value="{{ cat.id }}" class="peer sr-only category-radio"
+                            data-is-cc="{% if cat.name == 'Credit Card' %}true{% else %}false{% endif %}"
                             hx-get="/cashflow/get-installments-by-category/{{ cat.id }}"
                             hx-target="#card-selector-container"
                             hx-swap="innerHTML">
@@ -60,8 +61,24 @@
                 </div>
             </div>
 
-            <!-- Dynamic Card Selector Area -->
+            <!-- Dynamic Card Selector Area (For paying OFF a credit card) -->
             <div id="card-selector-container" class="space-y-4"></div>
+
+            <!-- Optional Card Selector Area (For Expense SWIPES) -->
+            <div id="expense-card-container" class="hidden">
+                <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Paid via Card (Optional)</label>
+                <div class="relative">
+                    <select name="expense_card_id" id="expense_card_select" class="w-full p-4 bg-slate-50 border-none rounded-xl font-bold focus:ring-2 focus:ring-emerald-500 text-slate-700 appearance-none">
+                        <option value="">-- Cash / Other --</option>
+                        {% for card in cards %}
+                        <option value="{{ card.id }}">{{ card.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                        <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+            </div>
 
             <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Description</label>
@@ -118,9 +135,33 @@
         }
     });
 
+    function updateExpenseCardVisibility() {
+        const typeIncome = document.querySelector('input[name="type"][value="income"]').checked;
+        const selectedCat = document.querySelector('input[name="category_id"]:checked');
+        const isCcCategory = selectedCat ? selectedCat.getAttribute('data-is-cc') === 'true' : false;
+        
+        const expenseCardContainer = document.getElementById('expense-card-container');
+        
+        // Hide if Income, or if Category is Credit Card
+        if (typeIncome || isCcCategory) {
+            expenseCardContainer.classList.add('hidden');
+            document.getElementById('expense_card_select').value = ""; // Clear selection
+        } else {
+            expenseCardContainer.classList.remove('hidden');
+        }
+    }
+
+    // Listen to changes on category
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.name === 'category_id') {
+            updateExpenseCardVisibility();
+        }
+    });
+
     // Reset container if type is changed to income
     document.querySelectorAll('input[name="type"]').forEach(radio => {
         radio.addEventListener('change', function() {
+            updateExpenseCardVisibility();
             if (this.value === 'income') {
                 document.getElementById('card-selector-container').innerHTML = '';
                 // Optional: reset fields here too? 
@@ -141,5 +182,8 @@
             if (descriptionInput) descriptionInput.value = '';
         }
     });
+    
+    // Initial call
+    updateExpenseCardVisibility();
 </script>
 {% endblock %}
