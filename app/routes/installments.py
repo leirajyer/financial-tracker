@@ -18,17 +18,28 @@ router = APIRouter(prefix="/installments", tags=["Installments"])
 async def list_all_installments(
     request: Request, 
     db: Session = Depends(get_db),
-    card_id: Optional[int] = Query(None),
-    payee_id: Optional[int] = Query(None),
+    card_id: Optional[str] = Query(None),
+    payee_id: Optional[str] = Query(None),
     completion: Optional[str] = Query(None) # YYYY-MM
 ):
     user = request.state.user
     query = db.query(Installment).filter(Installment.owner_id == user.id)
 
-    if card_id:
-        query = query.filter(Installment.card_id == card_id)
-    if payee_id:
-        query = query.filter(Installment.payee_id == payee_id)
+    filter_card_id = None
+    if card_id and card_id.strip():
+        try:
+            filter_card_id = int(card_id)
+            query = query.filter(Installment.card_id == filter_card_id)
+        except ValueError:
+            pass
+
+    filter_payee_id = None
+    if payee_id and payee_id.strip():
+        try:
+            filter_payee_id = int(payee_id)
+            query = query.filter(Installment.payee_id == filter_payee_id)
+        except ValueError:
+            pass
 
     # Order by ID DESC to show last added on top
     installments = (
