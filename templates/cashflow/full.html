@@ -103,12 +103,12 @@
                         
                         <div class="flex flex-wrap gap-2 mt-2">
                             {% if tx.category %}
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded shadow-sm bg-slate-50 border border-slate-100 text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+                            <span class="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200/60 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
                                 CAT: <span class="font-black text-slate-700">{{ tx.category.name }}</span>
                             </span>
                             {% endif %}
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded shadow-sm bg-slate-50 border border-slate-100 text-[8px] font-bold text-slate-500 uppercase tracking-widest">
-                                TYPE: <span class="font-black {{ 'text-emerald-600' if tx.type == 'income' else 'text-slate-700' }}">{{ tx.type }}</span>
+                            <span class="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200/60 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                                TYPE: <span class="font-black text-slate-700">{{ tx.type }}</span>
                             </span>
                         </div>
                     </div>

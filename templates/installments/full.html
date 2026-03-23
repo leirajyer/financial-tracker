@@ -96,26 +96,22 @@
                     
                     <h4 class="text-sm font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-900 transition-colors">{{ inst.description }}</h4>
                     
-                    <div class="flex flex-wrap gap-x-3 gap-y-1.5 mt-2">
-                        <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Target</span>
-                            <span class="text-[9px] font-black text-sky-600">{{ inst.end_date.strftime('%b %Y') }}</span>
-                        </div>
-                        <div class="w-px h-5 bg-slate-100 hidden md:block"></div>
-                        <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Paid</span>
-                            <span class="text-[9px] font-black text-slate-700">{{ prog.current }} <span class="text-emerald-500">/</span> {{ inst.payment_terms }}</span>
-                        </div>
-                        <div class="w-px h-5 bg-slate-100 hidden md:block"></div>
-                        <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Int.</span>
-                            <span class="text-[9px] font-black text-rose-500">₱{{ "{:,.2f}".format(inst.interest_rate or 0) }}</span>
-                        </div>
-                        <div class="w-px h-5 bg-slate-100 hidden md:block"></div>
-                        <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Prin.</span>
-                            <span class="text-[9px] font-black text-slate-600">₱{{ "{:,.2f}".format(inst.total_amount) }}</span>
-                        </div>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        <span class="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200/60 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                            TARGET: <span class="font-black text-sky-600">{{ inst.end_date.strftime('%b %Y') }}</span>
+                        </span>
+                        
+                        <span class="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200/60 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                            PAID: <span class="font-black text-slate-700">{{ prog.current }} <span class="text-emerald-500">/</span> {{ inst.payment_terms }}</span>
+                        </span>
+                        
+                        <span class="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200/60 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                            INT: <span class="font-black text-rose-500">₱{{ "{:,.2f}".format(inst.interest_rate or 0) }}</span>
+                        </span>
+                        
+                        <span class="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200/60 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                            PRIN: <span class="font-black text-slate-700">₱{{ "{:,.2f}".format(inst.total_amount) }}</span>
+                        </span>
                     </div>
                 </div>
             </div>

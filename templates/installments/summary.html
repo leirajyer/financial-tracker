@@ -30,17 +30,15 @@
                     </div>
                     
                     <h4 class="text-sm font-black text-slate-800 tracking-tight leading-tight">{{ inst.description }}</h4>
-                    
-                    <div class="flex items-center gap-4 mt-2.5">
-                        <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">REM</span>
-                            <span class="text-[10px] font-black text-slate-700">₱{{ "{:,.2f}".format(inst.get_remaining_balance()) }}</span>
-                        </div>
-                        <div class="w-px h-5 bg-slate-100"></div>
-                        <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">TOT</span>
-                            <span class="text-[10px] font-black text-slate-400">₱{{ "{:,.2f}".format(inst.total_to_pay or 0.0) }}</span>
-                        </div>
+                    <!-- Total Price & Remaining Balance Pills -->
+            <div class="flex flex-wrap gap-2 mt-1">
+                <span class="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200/60 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                    TOT: <span class="font-black text-slate-700">₱{{ "{:,.2f}".format(inst.total_to_pay or 0.0) }}</span>
+                </span>
+                <span class="inline-flex items-baseline gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200/60 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                    REM: <span class="font-black text-slate-700">₱{{ "{:,.2f}".format(inst.get_remaining_balance()) }}</span>
+                </span>
+            </div>
                     </div>
                 </div>
             </div>
