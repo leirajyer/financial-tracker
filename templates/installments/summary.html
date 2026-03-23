@@ -4,29 +4,36 @@
     {% set progress = inst.get_progress() %}
 
     <div class="p-4 rounded-xl bg-white border border-slate-100 shadow-sm transition-all hover:shadow-md flex justify-between items-center" style="border-left: 4px solid {{ inst.card.color if inst.card else '#e2e8f0' }};">
-        <div class="flex flex-col gap-1">
-            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Payee</p>
-            <p class="text-xs font-black text-slate-800 leading-none">{{ inst.payee.name if inst.payee else '—' }}</p>
+        <div class="flex flex-col gap-1.5 flex-1">
+            <!-- Payee & Description -->
+            <div>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{{ inst.payee.name if inst.payee else '—' }}</p>
+                <p class="text-base font-black text-slate-800 leading-tight">{{ inst.description }}</p>
+            </div>
 
-            <div class="flex gap-4 mt-3">
-                <div>
-                   <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
-                   <p class="text-[9px] font-black text-slate-600">₱{{ "{:,.2f}".format(inst.total_to_pay or 0.0) }}</p>
-                </div>
-                <div>
-                   <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Balance</p>
-                   <p class="text-[9px] font-black text-slate-600">₱{{ "{:,.2f}".format(inst.get_remaining_balance()) }}</p>
-                </div>
+            <!-- Total Price & Remaining Balance Pills -->
+            <div class="flex flex-wrap gap-2 mt-1">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded shadow-sm bg-slate-50 border border-slate-100 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                    <span>Total:</span> <span class="font-black text-slate-700">₱{{ "{:,.2f}".format(inst.total_to_pay or 0.0) }}</span>
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded shadow-sm bg-slate-50 border border-slate-100 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                    <span>Rem:</span> <span class="font-black text-slate-700">₱{{ "{:,.2f}".format(inst.get_remaining_balance()) }}</span>
+                </span>
             </div>
         </div>
 
-        <div class="flex flex-col items-end gap-1 text-right">
-            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Monthly Bill</p>
-            <p class="text-xs font-black text-emerald-600 leading-none">₱{{ "{:,.2f}".format(inst.monthly_payment or 0.0) }}</p>
+        <div class="flex flex-col items-end gap-1.5 text-right shrink-0 ml-4">
+            <!-- Monthly Bill -->
+            <div>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Monthly Bill</p>
+                <p class="text-sm font-black text-emerald-600 leading-none">₱{{ "{:,.2f}".format(inst.monthly_payment or 0.0) }}</p>
+            </div>
             
-            <div class="mt-3 text-right">
-                 <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Time Left</p>
-                 <span class="text-[9px] font-black text-indigo-500 bg-indigo-50/80 border border-indigo-100 px-1.5 py-0.5 rounded">{{ progress.total - progress.current }} Months</span>
+            <!-- Months Left -->
+            <div class="mt-1">
+                 <span class="text-[9px] font-black text-indigo-500 bg-indigo-50/80 border border-indigo-100 px-1.5 py-0.5 rounded">
+                    {{ progress.total - progress.current }} Months Left
+                 </span>
             </div>
         </div>
     </div>
