@@ -19,15 +19,16 @@ if IS_SQLITE:
     )
 else:
     # PostgreSQL (Railway / Render):
-    # - pool_pre_ping: test connection health before each checkout → fixes "Connection reset by peer"
-    # - pool_recycle: replace connections older than 4.5 min before the cloud DB kills them (~5 min idle timeout)
-    # - pool_size / max_overflow: conservative limits for free-tier (max 5 + 5 = 10 concurrent connections)
+    # - pool_pre_ping: reconnects automatically if server closed the connection
+    # - pool_recycle=270: rotate before Railway's ~5min idle timeout kills them
+    # - pool_size=2, max_overflow=2: with 2 gunicorn workers this = 8 max connections
+    #   safely under the Railway free-tier limit of 25
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
         pool_pre_ping=True,
         pool_recycle=270,
-        pool_size=5,
-        max_overflow=5,
+        pool_size=2,
+        max_overflow=2,
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

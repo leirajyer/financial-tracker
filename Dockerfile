@@ -21,6 +21,5 @@ COPY . .
 # Railway and Render provide the PORT variable
 ENV PORT 8000
 
-# Use Gunicorn with 2 workers to keep memory usage low (Railway/Render friendly)
-# Increased timeout to 120s to allow for DB startup/seeding
-CMD ["sh", "-c", "gunicorn main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT} --timeout 120"]
+# 1 worker keeps memory low on Railway free tier (512MB); uvicorn handles concurrency via async
+CMD ["sh", "-c", "gunicorn main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT} --timeout 120"]
