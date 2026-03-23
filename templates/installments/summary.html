@@ -19,10 +19,13 @@
                 <div class="shrink-0 w-1.5 h-10 rounded-full mt-1" style="background-color: {{ card_color }}"></div>
                 
                 <div class="flex flex-col">
-                    <div class="flex items-center gap-2 mb-0.5">
-                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">{{ inst.payee.name if inst.payee else 'External' }}</span>
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            {{ inst.payee.name if inst.payee else 'External' }}
+                            {% if inst.card %} <span class="opacity-50 mx-0.5">&bull;</span> <span style="color: {{ card_color }}">{{ inst.card.name }}</span>{% endif %}
+                        </span>
                         {% if months_left <= 1 %}
-                            <span class="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest flex items-center gap-1"><i class="fa-solid fa-check"></i> Final</span>
+                            <span class="ml-1 px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest flex items-center gap-1"><i class="fa-solid fa-check"></i> Final</span>
                         {% endif %}
                     </div>
                     
@@ -30,12 +33,12 @@
                     
                     <div class="flex items-center gap-4 mt-2.5">
                         <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Remaining</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">REM</span>
                             <span class="text-[10px] font-black text-slate-700">₱{{ "{:,.2f}".format(inst.get_remaining_balance()) }}</span>
                         </div>
                         <div class="w-px h-5 bg-slate-100"></div>
                         <div class="flex flex-col">
-                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">TOT</span>
                             <span class="text-[10px] font-black text-slate-400">₱{{ "{:,.2f}".format(inst.total_to_pay or 0.0) }}</span>
                         </div>
                     </div>
@@ -44,16 +47,11 @@
 
             <!-- Right Column: Billed Metrics -->
             <div class="flex flex-col items-end shrink-0 pl-4 border-l border-slate-50">
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Monthly</span>
+                <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">MO.</span>
                 <span class="text-sm font-black text-emerald-600 leading-none">₱{{ "{:,.2f}".format(inst.monthly_payment or 0.0) }}</span>
                 
-                <div class="mt-3 flex flex-col items-end gap-1.5 border-t border-slate-50 pt-2 w-full text-right">
-                    <div class="w-full flex justify-between items-center gap-3">
-                        <span class="text-[9px] font-black {{ 'text-orange-500' if months_left > 12 else ('text-emerald-500' if months_left <= 3 else 'text-indigo-500') }} uppercase tracking-widest">{{ months_left }} Mo. Left</span>
-                    </div>
-                    <div class="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-1000" style="width: {{ progress.percent }}%; background-color: {{ card_color }};"></div>
-                    </div>
+                <div class="mt-3 flex border-t border-slate-50 pt-2 w-full justify-end">
+                    <span class="text-[9px] font-black {{ 'text-orange-500' if months_left > 12 else ('text-emerald-500' if months_left <= 3 else 'text-indigo-500') }} uppercase tracking-widest">{{ months_left }} Mo. Left</span>
                 </div>
             </div>
 
