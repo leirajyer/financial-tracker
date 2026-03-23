@@ -67,72 +67,76 @@
         </form>
     </div>
 
-    <div class="space-y-2">
+    <div class="space-y-4">
         {% for inst in installments %}
         {% set prog = inst.get_progress() %}
-        <div
-            class="group bg-white p-5 md:px-8 rounded-xl hover:bg-slate-50 transition-all duration-300 relative overflow-hidden">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex-1 min-w-0">
-                    <h3 class="font-black text-slate-800 text-sm tracking-tight flex items-center gap-2 overflow-hidden">
-                        <span class="truncate">{{ inst.description }}</span>
-                        <span class="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-xl border border-slate-100 shrink-0">₱{{ "{:,.2f}".format(inst.total_amount) }}</span>
-                    </h3>
-                    <span class="text-[9px] font-black text-indigo-500 uppercase bg-indigo-50 px-2 py-0.5 rounded-xl inline-block mt-1">{{
-                        inst.card.name }}</span>
-                </div>
- 
-                <div class="hidden lg:flex flex-row items-center gap-2 px-6 border-x border-slate-100 shrink-0">
-                    <div class="text-center px-4">
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Start</p>
-                        <p class="text-xs font-bold text-slate-500 uppercase">{{ inst.start_date.strftime('%b %Y') }}</p>
-                    </div>
-                    <div class="text-center px-4 border-l border-slate-100">
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Completion</p>
-                        <p class="text-xs font-bold text-sky-600 uppercase">{{ inst.end_date.strftime('%b %Y') }}</p>
-                    </div>
-                    <div class="text-center px-4 border-l border-slate-100">
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Duration</p>
-                        <p class="text-xs font-bold text-slate-800">{{ prog.current }} <span class="text-emerald-500">/</span> {{ inst.payment_terms }}</p>
-                    </div>
-                    <div class="text-center px-4 border-l border-slate-100">
-                        <p class="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-1">Interest</p>
-                        <p class="text-xs font-bold text-rose-500">₱{{ "{:,.2f}".format(inst.interest_rate or 0) }}</p>
-                    </div>
-                </div>
+        {% set months_left = prog.total - prog.current %}
+        {% set card_color = inst.card.color if inst.card else '#94a3b8' %}
+        
+        <div onclick="openEditInstModal('{{ inst.id }}', '{{ inst.description }}', '{{ inst.card_id }}', '{{ inst.category_id }}', '{{ inst.payee_id }}', '{{ inst.total_amount }}', '{{ inst.payment_terms }}', '{{ inst.interest_rate }}', '{{ inst.start_date.strftime('%Y-%m') }}')"
+             class="relative group bg-white border border-slate-200/60 rounded-2xl p-5 md:px-6 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-indigo-200 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col md:flex-row gap-4 justify-between items-center">
+            
+            <!-- Subtle ambient background glow -->
+            <div class="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-[0.03] blur-3xl group-hover:opacity-10 transition-opacity duration-500 pointer-events-none" style="background-color: {{ card_color }}"></div>
 
-                <!-- Progress Bar: Visible only on mobile/tablet below LG -->
-                <div class="lg:hidden w-full space-y-2 mt-2">
-                    <div class="w-full bg-slate-100 rounded-xl h-1.5 overflow-hidden">
-                        <div class="bg-indigo-500 h-1.5 rounded-xl transition-all duration-500" style="width: {{ prog.percent }}%"></div>
-                    </div>
-                    <div class="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
-                        <span class="text-slate-400">Paid {{ prog.current }}/{{ inst.payment_terms }} Months</span>
-                        <span class="text-indigo-600">{{ inst.end_date.strftime('%b %Y') }} Finish</span>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between md:justify-end gap-6 md:gap-8 shrink-0 w-full md:w-auto">
-                    <div class="text-left md:text-right flex flex-col items-start md:items-end">
-                        <p class="text-lg font-black text-slate-900 tracking-tighter leading-none">₱{{
-                            "{:,.2f}".format(inst.monthly_payment) }}</p>
-                        {% set is_paid = inst.is_paid_current %}
-                        {% if is_paid %}
-                        <span class="text-[7px] font-black bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-1">PAID</span>
-                        {% else %}
-                        <span class="text-[7px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-1">PENDING</span>
+            <!-- Left: Identity & Metrics -->
+            <div class="relative z-10 flex gap-4 items-start flex-1 w-full min-w-0 pr-4">
+                <div class="shrink-0 w-1.5 h-12 rounded-full mt-1" style="background-color: {{ card_color }}"></div>
+                
+                <div class="flex flex-col min-w-0 w-full">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            {{ inst.payee.name if inst.payee else 'External' }}
+                            {% if inst.card %} <span class="opacity-50 mx-0.5">&bull;</span> <span style="color: {{ card_color }}">{{ inst.card.name }}</span>{% endif %}
+                        </span>
+                        {% if months_left <= 1 %}
+                            <span class="ml-1 px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 text-[8px] font-black uppercase tracking-widest flex items-center gap-1"><i class="fa-solid fa-check"></i> Final</span>
                         {% endif %}
                     </div>
-                    <button
-                        onclick="openEditInstModal('{{ inst.id }}', '{{ inst.description }}', '{{ inst.card_id }}', '{{ inst.category_id }}', '{{ inst.payee_id }}', '{{ inst.total_amount }}', '{{ inst.payment_terms }}', '{{ inst.interest_rate }}', '{{ inst.start_date.strftime('%Y-%m') }}')"
-                        class="p-2 text-slate-200 hover:text-emerald-600 transition-colors">
-                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                    </button>
+                    
+                    <h4 class="text-base font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-900 transition-colors">{{ inst.description }}</h4>
+                    
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-3">
+                        <div class="flex flex-col">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Target Finish</span>
+                            <span class="text-[10px] font-black text-sky-600">{{ inst.end_date.strftime('%b %Y') }}</span>
+                        </div>
+                        <div class="w-px h-5 bg-slate-100 hidden md:block"></div>
+                        <div class="flex flex-col">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Terms Completed</span>
+                            <span class="text-[10px] font-black text-slate-700">{{ prog.current }} <span class="text-emerald-500">/</span> {{ inst.payment_terms }}</span>
+                        </div>
+                        <div class="w-px h-5 bg-slate-100 hidden md:block"></div>
+                        <div class="flex flex-col">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Interest Rate</span>
+                            <span class="text-[10px] font-black text-rose-500">₱{{ "{:,.2f}".format(inst.interest_rate or 0) }}</span>
+                        </div>
+                        <div class="w-px h-5 bg-slate-100 hidden md:block"></div>
+                        <div class="flex flex-col">
+                            <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Principal Amnt</span>
+                            <span class="text-[10px] font-black text-slate-600">₱{{ "{:,.2f}".format(inst.total_amount) }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Right: Monthly Bill & Edit Hint -->
+            <div class="relative z-10 flex flex-col items-end shrink-0 md:pl-6 border-t md:border-t-0 md:border-l border-slate-50 justify-center w-full md:w-auto pt-4 md:pt-0">
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:hidden">MO. BILL</span>
+                <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1 hidden group-hover:block transition-all outline-none">EDIT ITEM &rarr;</span>
+                <span class="text-xl font-black text-emerald-600 leading-none group-hover:text-indigo-600 transition-colors">
+                    ₱{{ "{:,.2f}".format(inst.monthly_payment) }}
+                </span>
+                <div class="mt-2.5 text-right w-full flex justify-end">
+                    {% set is_paid = inst.is_paid_current %}
+                    {% if is_paid %}
+                    <span class="text-[8px] font-black bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded shadow-sm inline-block uppercase tracking-widest">PAID MONTH</span>
+                    {% else %}
+                    <span class="text-[8px] font-black bg-rose-50 text-rose-600 border border-rose-100 px-2 py-0.5 rounded shadow-sm inline-block uppercase tracking-widest">PENDING</span>
+                    {% endif %}
+                </div>
+            </div>
+
         </div>
         {% endfor %}
     </div>
