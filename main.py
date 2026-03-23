@@ -120,8 +120,15 @@ async def index(
         .all()
     )
 
-    # Use the combined items list for the dashboard summary
-    active_installments = stats["items"]
+    def get_sort_key(item):
+        val = getattr(item, "created_at", None) or getattr(item, "start_date", None)
+        if hasattr(val, "timestamp"):
+            return val.timestamp()
+        elif hasattr(val, "toordinal"):
+            return float(val.toordinal())
+        return 0.0
+
+    active_installments = sorted(stats["items"], key=get_sort_key, reverse=True)[:5]
 
     # Dropdowns for filters
     cards = db.query(Card).filter(Card.owner_id == user.id).all()
