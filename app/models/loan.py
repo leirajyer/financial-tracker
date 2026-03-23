@@ -58,9 +58,10 @@ class Loan(Base):
     def get_progress(self):
         """Calculates current payment progress."""
         today = date.today()
-        total_months = self.terms_years * 12
+        years = self.terms_years or 0
+        total_months = years * 12
 
-        if today < self.start_date:
+        if not self.start_date or today < self.start_date:
             return {"percent": 0, "current": 0, "total": total_months}
 
         diff = relativedelta(today, self.start_date)

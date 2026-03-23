@@ -62,7 +62,7 @@ class Installment(Base):
         today = date.today()
         total = self.total_months_count
 
-        if today < self.start_date:
+        if not self.start_date or today < self.start_date:
             return {"percent": 0, "current": 0, "total": total}
 
         diff = relativedelta(today, self.start_date)
