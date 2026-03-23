@@ -1,9 +1,10 @@
 from datetime import date
 from sqlalchemy.orm import joinedload
 from sqlalchemy import extract, func
-from app.models import Installment, CardMonthlyStatus, Loan, CashFlow, Category
+from app.models import Installment, CardMonthlyStatus, Loan, CashFlow, Category, Card
 import calendar
 from types import SimpleNamespace
+from dateutil.relativedelta import relativedelta
 
 
 def calculate_monthly_totals(
@@ -16,6 +17,10 @@ def calculate_monthly_totals(
 
     target_date = date(yr, mo, 1)
     month_year_str = f"{yr}-{mo:02d}"
+
+    # FETCH CC CATEGORY ID EARLY
+    cc_category = db_session.query(Category).filter(Category.name == "Credit Card").first()
+    cc_cat_id = cc_category.id if cc_category else -1
 
     query = db_session.query(Installment).options(joinedload(Installment.card))
 
@@ -31,23 +36,19 @@ def calculate_monthly_totals(
     all_items = query.all()
 
     status_query = db_session.query(CardMonthlyStatus).filter(CardMonthlyStatus.month_year == month_year_str)
-    
-    # If we want to be strict, CardMonthlyStatus should also have owner_id
-    # But currently it relates to Card, and if we filter Installments by user_id, 
-    # we only get cards belonging to that user.
-    # However, let's filter statuses by checking the card's owner.
-    
     statuses = status_query.all()
-    # Map card_id to its status object for richer checks
     paid_status_map = {s.card_id: s for s in statuses}
 
-    total_burn = 0  # Unpaid amount
-    total_paid = 0  # Paid amount
+    total_burn = 0  # To be recalculated
+    total_paid = 0  # To be recalculated
     total_remaining_debt = 0
 
     pending_cards = {}
     paid_cards = {}
     active_items = []
+
+    # TRACK BILLING PER CARD
+    card_billing = {} # card_id -> amount
 
     for item in all_items:
         if not item.start_date or not item.end_date:
@@ -62,95 +63,142 @@ def calculate_monthly_totals(
         if item_start_norm <= target_date <= item_end_norm:
             active_items.append(item)
             card = item.card
-            c_id = (
-                card.id if card else 0
-            )  # Use c_id to avoid overwriting function param card_id
-            card_name = card.name if card else "Unknown"
+            c_id = card.id if card else 0
             payment = item.monthly_payment
-            # Master override from manual marking (CardMonthlyStatus)
-            status_obj = paid_status_map.get(c_id)
-            item_is_paid = status_obj.is_paid if status_obj else False
             
-            # CRITICAL FIX: If the card was marked as PAID, but this SPECIFIC installment 
-            # was added AFTER the payment occurred, it should stay PENDING.
-            if item_is_paid and status_obj and status_obj.paid_at and item.created_at:
-                if item.created_at > status_obj.paid_at:
-                    item_is_paid = False
-            
-            if status_obj is None:
-                # DEFAULT LOGIC: All items start as PENDING
-                item_is_paid = False
-            
-            # Carry the status for the templates
-            item.is_paid_current = item_is_paid
-
-            target_collection = paid_cards if item_is_paid else pending_cards
-
-            if card_name not in target_collection:
-                target_collection[card_name] = {
-                    "id": c_id,
-                    "total": 0,
-                    "status": "PAID" if item_is_paid else "PENDING",
-                    "color": card.color if card else "#94a3b8",
-                }
-
-            target_collection[card_name]["total"] += payment
-
-            if item_is_paid:
-                total_paid += payment
-            else:
-                total_burn += payment
+            card_billing[c_id] = card_billing.get(c_id, 0.0) + payment
 
     # --- ADD DAILY SWIPES FROM CASHFLOW ---
-    # Fetch all cashflows for this month that are tied to a card
-    swipes_query = db_session.query(CashFlow).options(joinedload(CashFlow.card)).filter(
+    # Fetch all cashflows for this month that are tied to a card (EXCLUDING CC PAYMENTS)
+    swipes_q = db_session.query(CashFlow).options(joinedload(CashFlow.card)).filter(
         CashFlow.owner_id == user_id,
         CashFlow.card_id.is_not(None),
         extract("year", CashFlow.date) == yr,
-        extract("month", CashFlow.date) == mo
+        extract("month", CashFlow.date) == mo,
+        CashFlow.category_id != cc_cat_id
     )
+    if card_id:
+        swipes_q = swipes_q.filter(CashFlow.card_id == card_id)
     
-    swipes = swipes_query.all()
+    swipes = swipes_q.all()
     
     for swipe in swipes:
-        card = swipe.card
-        if not card:
+        c_id = swipe.card_id
+        card_billing[c_id] = card_billing.get(c_id, 0.0) + swipe.amount
+
+    # --- ADD LOANS ---
+    loans_q = db_session.query(Loan).options(joinedload(Loan.card)).filter(Loan.owner_id == user_id, Loan.status == "active")
+    if card_id:
+        loans_q = loans_q.filter(Loan.card_id == card_id)
+    if category_id:
+        loans_q = loans_q.filter(Loan.category_id == category_id)
+    
+    loans = loans_q.all()
+    loan_total_monthly = 0.0
+    loan_unlinked_total = 0.0
+    for loan in loans:
+        if not loan.start_date or not loan.end_date:
             continue
             
+        if loan.start_date <= target_date <= loan.end_date:
+            monthly_payment = loan.monthly_payment or 0.0
+            loan_total_monthly += monthly_payment
+            
+            if loan.card_id:
+                c_id = loan.card_id
+                card_billing[c_id] = card_billing.get(c_id, 0.0) + monthly_payment
+                
+                if not hasattr(loan, 'payee') or loan.payee is None:
+                    loan.payee = SimpleNamespace(name="Loan (Credit)")
+                active_items.append(loan)
+            else:
+                loan_unlinked_total += monthly_payment
+
+    # --- CARRYOVER & ACTUAL PAYMENTS LOGIC ---
+    # 1. Fetch all cards involved
+    relevant_card_ids = set(card_billing.keys())
+    if card_id:
+        relevant_card_ids.add(card_id)
+    
+    cards = db_session.query(Card).filter(Card.id.in_(relevant_card_ids)).all()
+    card_map = {c.id: c for c in cards}
+
+    # 2. Fetch ACTUAL payments made THIS month
+    actual_payments_q = db_session.query(
+        CashFlow.card_id,
+        func.sum(CashFlow.amount)
+    ).filter(
+        CashFlow.owner_id == user_id,
+        CashFlow.category_id == cc_cat_id,
+        extract("year", CashFlow.date) == yr,
+        extract("month", CashFlow.date) == mo
+    ).group_by(CashFlow.card_id).all()
+    
+    actual_payments = {cid: amt for cid, amt in actual_payments_q}
+
+    # 3. Process All Cards for this user to determine Final Status and Carryover
+    # Note: We must check all cards because a card might have 0 billing this month but still have a carryover balance.
+    if card_id:
+        cards_to_check = [c for c in cards if c.id == card_id]
+    else:
+        cards_to_check = cards
+
+    for card in cards_to_check:
         c_id = card.id
         card_name = card.name
-        payment = swipe.amount
+        billed_this_month = card_billing.get(c_id, 0.0)
         
-        # Check payment status of the card
+        # Calculate Balance from PREVIOUS months
+        prev_balance = get_card_balance_at_date(db_session, user_id, c_id, target_date - relativedelta(months=1))
+        
+        amt_paid_this_month = actual_payments.get(c_id, 0.0)
+        
+        # total_due_for_this_card = what was owed before + what was billed now
+        total_due_for_card = prev_balance + billed_this_month
+        
+        # remaining_for_card = total_due - what was paid now
+        remaining_for_card = total_due_for_card - amt_paid_this_month
+        
+        is_paid = remaining_for_card <= 0.01 # Small epsilon for float logic
+        
+        # If manually marked as PAID, we might want to respect that even if math says otherwise?
+        # But for overpayment, the math is better.
         status_obj = paid_status_map.get(c_id)
-        item_is_paid = status_obj.is_paid if status_obj else False
+        if status_obj and status_obj.is_paid:
+            is_paid = True
         
-        # CRITICAL: If the card was paid but swipe happened AFTER, it's pending
-        if item_is_paid and status_obj and status_obj.paid_at and swipe.created_at:
-            if swipe.created_at > status_obj.paid_at:
-                item_is_paid = False
-        
-        target_collection = paid_cards if item_is_paid else pending_cards
+        # Final Assignment to collections
+        target_collection = paid_cards if is_paid else pending_cards
+        target_collection[card_name] = {
+            "id": c_id,
+            "total": round(max(0, remaining_for_card if not is_paid else billed_this_month), 2),
+            "status": "PAID" if is_paid else "PENDING",
+            "color": card.color if card else "#94a3b8",
+            "billed_this_month": round(billed_this_month, 2),
+            "prev_balance": round(prev_balance, 2),
+            "actual_paid": round(amt_paid_this_month, 2)
+        }
 
-        if card_name not in target_collection:
-            target_collection[card_name] = {
-                "id": c_id,
-                "total": 0,
-                "status": "PAID" if item_is_paid else "PENDING",
-                "color": card.color if card else "#94a3b8",
-            }
-
-        target_collection[card_name]["total"] += payment
-
-        if item_is_paid:
-            total_paid += payment
+        if is_paid:
+            total_paid += billed_this_month # We count the billed amount as "covered"
+            # But wait, if they overpaid, should total_paid reflect that?
+            # Usually total_paid in the dashboard is part of "How much of my debt is gone".
+            # If they paid $1100 for $1000, $1100 is gone.
+            # But $1000 is this month's debt.
         else:
-            total_burn += payment
+            total_burn += max(0, remaining_for_card)
 
-    # --- ADD LOANS & CASHFLOW AGGREGATES ---
-    cc_category = db_session.query(Category).filter(Category.name == "Credit Card").first()
-    cc_cat_id = cc_category.id if cc_category else -1
+    # Cleanup: Mark items in active_items as paid if their card is paid
+    for item in active_items:
+        c_id = getattr(item, 'card_id', None)
+        if c_id:
+            card = card_map.get(c_id)
+            if card and card.name in paid_cards:
+                item.is_paid_current = True
+            else:
+                item.is_paid_current = False
 
+    # --- CASHFLOW AGGREGATES FOR TOP STATS ---
     cashflow_aggregates = db_session.query(
         CashFlow.category_id,
         func.sum(CashFlow.amount)
@@ -172,68 +220,8 @@ def calculate_monthly_totals(
 
     cashflow_regular_expense_total = cashflow_expense_total - cashflow_cc_payment_total
 
-    loans_q = db_session.query(Loan).options(joinedload(Loan.card)).filter(Loan.owner_id == user_id, Loan.status == "active")
-    if card_id:
-        loans_q = loans_q.filter(Loan.card_id == card_id)
-    if category_id:
-        loans_q = loans_q.filter(Loan.category_id == category_id)
-    # Note: Loans don't currently have a payee_id field, but if they did, we'd filter it here.
-    
-    loans = loans_q.all()
-    loan_total_monthly = 0.0
-    loan_unlinked_total = 0.0
-    for loan in loans:
-        if not loan.start_date or not loan.end_date:
-            continue
-            
-        if loan.start_date <= target_date <= loan.end_date:
-            monthly_payment = loan.monthly_payment or 0.0
-            loan_total_monthly += monthly_payment
-            
-            # If tied to a card, add to card totals
-            if loan.card_id:
-                c_id = loan.card_id
-                card_name = loan.card.name
-                
-                status_obj = paid_status_map.get(c_id)
-                item_is_paid = status_obj.is_paid if status_obj else False
-                
-                # Check creation date logic for late-added loans (similar to installments)
-                if item_is_paid and status_obj and status_obj.paid_at and loan.created_at:
-                    if loan.created_at > status_obj.paid_at:
-                        item_is_paid = False
 
-                target_collection = paid_cards if item_is_paid else pending_cards
-
-                if card_name not in target_collection:
-                    target_collection[card_name] = {
-                        "id": c_id,
-                        "total": 0,
-                        "status": "PAID" if item_is_paid else "PENDING",
-                        "color": loan.card.color if loan.card else "#94a3b8",
-                    }
-
-                target_collection[card_name]["total"] += monthly_payment
-
-                if item_is_paid:
-                    total_paid += monthly_payment
-                else:
-                    total_burn += monthly_payment
-                
-                # Add to active items for summary display
-                loan.is_paid_current = item_is_paid
-                
-                # Dynamically add a payee attribute for the template if it doesn't exist
-                if not hasattr(loan, 'payee') or loan.payee is None:
-                    loan.payee = SimpleNamespace(name="Loan (Credit)")
-                
-                active_items.append(loan)
-            else:
-                loan_unlinked_total += monthly_payment
-
-    # --- MATH CLEANUP (Final Totals) ---
-
-    # 1. total_due is the sum of what's paid and what's left
+    # MATH CLEANUP (Final Totals)
     total_due = round(total_burn + total_paid, 2)
 
     # 2. Calculate percentage based on actual totals calculated in the loop
@@ -274,6 +262,79 @@ def calculate_monthly_totals(
         "cashflow_regular_expense_total": cashflow_regular_expense_total,
         "aggregate_monthly_payment": aggregate_monthly_payment,
     }
+
+
+def get_card_balance_at_date(db_session, user_id, card_id, target_date):
+    """
+    Calculates cumulative balance (Billed - Paid) up to target_date (last day of that month).
+    """
+    cc_category = db_session.query(Category).filter(Category.name == "Credit Card").first()
+    cc_cat_id = cc_category.id if cc_category else -1
+
+    # End of target month
+    last_day = calendar.monthrange(target_date.year, target_date.month)[1]
+    end_of_month = date(target_date.year, target_date.month, last_day)
+
+    # 1. Total Paid (CC Payments up to end_of_month)
+    total_paid = db_session.query(func.sum(CashFlow.amount)).filter(
+        CashFlow.owner_id == user_id,
+        CashFlow.card_id == card_id,
+        CashFlow.category_id == cc_cat_id,
+        CashFlow.date <= end_of_month
+    ).scalar() or 0.0
+
+    # 2. Total Swipes (Non-CC payments up to end_of_month)
+    total_swipes = db_session.query(func.sum(CashFlow.amount)).filter(
+        CashFlow.owner_id == user_id,
+        CashFlow.card_id == card_id,
+        CashFlow.category_id != cc_cat_id,
+        CashFlow.type == "expense",
+        CashFlow.date <= end_of_month
+    ).scalar() or 0.0
+
+    # 3. Total Installments up to end_of_month
+    all_inst = db_session.query(Installment).filter(
+        Installment.owner_id == user_id,
+        Installment.card_id == card_id,
+        Installment.start_date <= end_of_month
+    ).all()
+    
+    total_inst = 0.0
+    for inst in all_inst:
+        if not inst.start_date: continue
+        # How many months from start_date up to end_of_month?
+        start = date(inst.start_date.year, inst.start_date.month, 1)
+        end = date(end_of_month.year, end_of_month.month, 1)
+        
+        months_passed = (end.year - start.year) * 12 + (end.month - start.month) + 1
+        months_to_bill = min(months_passed, inst.payment_terms or 1)
+        total_inst += inst.monthly_payment * months_to_bill
+
+    # 4. Total Loans up to end_of_month
+    all_loans = db_session.query(Loan).filter(
+        Loan.owner_id == user_id,
+        Loan.card_id == card_id,
+        Loan.start_date <= end_of_month
+    ).all()
+    
+    total_loans = 0.0
+    for loan in all_loans:
+        if not loan.start_date: continue
+        start = date(loan.start_date.year, loan.start_date.month, 1)
+        end = date(end_of_month.year, end_of_month.month, 1)
+        
+        months_passed = (end.year - start.year) * 12 + (end.month - start.month) + 1
+        # Loans might not have payment_terms, use end_date if exists
+        if loan.end_date:
+            loan_end = date(loan.end_date.year, loan.end_date.month, 1)
+            months_possible = (loan_end.year - start.year) * 12 + (loan_end.month - start.month) + 1
+            months_to_bill = min(months_passed, months_possible)
+        else:
+            months_to_bill = months_passed
+            
+        total_loans += (loan.monthly_payment or 0.0) * months_to_bill
+
+    return (total_swipes + total_inst + total_loans) - total_paid
 
 
 def get_card_status(db, card_id, year, month):
@@ -431,9 +492,9 @@ def get_freedom_date(db_session, user_id=None):
         
     dates = []
     if items:
-        dates.extend([i.end_date for i in items if i.end_date])
+        dates.extend([inst.end_date for inst in items if inst.end_date])
     if loans:
-        dates.extend([l.end_date for l in loans if l.end_date])
+        dates.extend([loan.end_date for loan in loans if loan.end_date])
             
     if not dates:
         return "No active debt"

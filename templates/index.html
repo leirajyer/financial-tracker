@@ -3,50 +3,27 @@
 {% block content %}
 <div class="w-full mx-auto space-y-6">
 
-    <div class="flex flex-col gap-1 mb-2">
-        <h1 class="text-2xl font-black text-slate-800 tracking-tight">Financial Pulse</h1>
-        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Homepage Dashboard</p>
+    <!-- Page Header with Quick Action -->
+    <div class="flex items-center justify-between mb-2">
+        <div class="flex flex-col gap-1">
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Financial Pulse</h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Homepage Dashboard</p>
+        </div>
+        <a href="/cashflow/add"
+           class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-200 transition-all hover:shadow-indigo-300 hover:-translate-y-px">
+            <i class="fa-solid fa-plus text-xs"></i>
+            Add Expense
+        </a>
     </div>
 
-    <!-- Summary Statistics -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Main Aggregate Total -->
-        <div class="bg-indigo-900 rounded-2xl p-6 shadow-xl shadow-indigo-100/30 flex flex-col justify-between min-h-[140px] border border-indigo-950">
+    <!-- Summary Statistics (single card) -->
+    <div class="flex">
+        <div class="bg-indigo-900 rounded-xl px-5 py-4 shadow-lg shadow-indigo-100/30 flex items-center justify-between gap-8 border border-indigo-950 w-full md:w-auto">
             <div>
-                <p class="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em] mb-1">Remaining Balance for {{ month_name }}</p>
-                <h2 class="text-3xl font-black text-white tracking-tighter">₱{{ "{:,.2f}".format(aggregate_monthly_payment) }}</h2>
+                <p class="text-[8px] font-black text-indigo-300 uppercase tracking-[0.2em] mb-0.5">Remaining Balance · {{ month_name }}</p>
+                <h2 class="text-2xl font-black text-white tracking-tighter">₱{{ "{:,.2f}".format(aggregate_monthly_payment) }}</h2>
             </div>
-            <div class="flex items-center gap-2 mt-4">
-                <span class="px-2 py-1 bg-white/10 border border-white/5 rounded text-[8px] font-black text-indigo-100 uppercase tracking-widest">Remaining Total</span>
-            </div>
-        </div>
-        
-        <!-- Debt Total (Installments + Loans) -->
-        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between min-h-[140px]">
-            <div>
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Remaining Liability Dues</p>
-                <p class="text-2xl font-black text-slate-800 tracking-tight">₱{{ "{:,.2f}".format(total_burn + loan_unlinked_total) }}</p>
-            </div>
-            <div class="flex items-center gap-3 mt-4">
-                <div class="flex flex-col">
-                    <span class="text-[8px] font-black text-slate-400 uppercase">Credit (Inst+Swipes+Loans)</span>
-                    <span class="text-[10px] font-bold text-slate-600">₱{{ "{:,.0f}".format(total_burn) }}</span>
-                </div>
-                <div class="w-px h-6 bg-slate-100"></div>
-                <div class="flex flex-col">
-                    <span class="text-[8px] font-black text-slate-400 uppercase">External Loans</span>
-                    <span class="text-[10px] font-bold text-slate-600">₱{{ "{:,.0f}".format(loan_unlinked_total) }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Cashflow Total -->
-        <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between min-h-[140px]">
-            <div>
-                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Cashflow Expenses</p>
-                <p class="text-2xl font-black text-emerald-600 tracking-tight">₱{{ "{:,.2f}".format(cashflow_expense_total) }}</p>
-            </div>
-            <p class="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-widest">Regular monthly upkeep</p>
+            <span class="px-2 py-1 bg-white/10 border border-white/5 rounded text-[7px] font-black text-indigo-200 uppercase tracking-widest whitespace-nowrap">This Month</span>
         </div>
     </div>
 
@@ -71,29 +48,6 @@
                     <i class="fa-solid fa-credit-card text-indigo-500"></i> Credit Pulse
                 </h3>
                 <div class="flex items-center gap-4">
-                    <form method="GET" action="/" class="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-[300px] md:max-w-none">
-                        <select name="card_id" onchange="this.form.submit()" class="text-[9px] font-black uppercase tracking-tight bg-slate-100 border-none rounded-lg p-1.5 focus:ring-1 focus:ring-indigo-500">
-                            <option value="">All Cards</option>
-                            {% for c in cards %}
-                            <option value="{{ c.id }}" {% if filter_card == c.id %}selected{% endif %}>{{ c.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <select name="payee_id" onchange="this.form.submit()" class="text-[9px] font-black uppercase tracking-tight bg-slate-100 border-none rounded-lg p-1.5 focus:ring-1 focus:ring-indigo-500">
-                            <option value="">All Payees</option>
-                            {% for p in payees %}
-                            <option value="{{ p.id }}" {% if filter_payee == p.id %}selected{% endif %}>{{ p.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <select name="category_id" onchange="this.form.submit()" class="text-[9px] font-black uppercase tracking-tight bg-slate-100 border-none rounded-lg p-1.5 focus:ring-1 focus:ring-indigo-500">
-                            <option value="">All Categories</option>
-                            {% for cat in categories %}
-                            <option value="{{ cat.id }}" {% if filter_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-                            {% endfor %}
-                        </select>
-                        {% if filter_card or filter_payee or filter_category %}
-                        <a href="/" class="text-[9px] font-black text-rose-500 uppercase hover:text-rose-600 transition-colors px-1">✕</a>
-                        {% endif %}
-                    </form>
                     <a href="/installments" class="text-[10px] text-indigo-600 font-bold uppercase hover:underline">Manage</a>
                 </div>
             </div>

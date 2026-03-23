@@ -6,21 +6,29 @@
     <div class="p-4 rounded-xl bg-white border border-slate-100 shadow-sm transition-all hover:shadow-md" style="border-left: 4px solid {{ inst.card.color if inst.card else '#e2e8f0' }};">
         <div class="flex justify-between items-start mb-3">
             <div>
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Payee</p>
                 <p class="text-xs font-black text-slate-800 leading-none">{{ inst.payee.name }}</p>
-                <div class="flex items-center gap-2 mt-1.5">
-                    <span class="text-[8px] font-black px-1.5 py-0.5 rounded text-white tracking-widest uppercase" style="background-color: {{ inst.card.color if inst.card else '#94a3b8' }};">
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="text-[7px] font-black px-1.5 py-0.5 rounded text-white tracking-widest uppercase" style="background-color: {{ inst.card.color if inst.card else '#94a3b8' }};">
                         {{ inst.card.name if inst.card else 'N/A' }}
                     </span>
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{{ inst.category.name if inst.category else 'General' }}</span>
+                    <span class="text-[7px] font-bold text-slate-400 uppercase tracking-widest">{{ inst.category.name if inst.category else 'General' }}</span>
                 </div>
             </div>
             <div class="text-right flex flex-col items-end">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Monthly Bill</p>
                 <p class="text-xs font-black text-emerald-600">₱{{ "{:,.2f}".format(inst.monthly_payment) }}</p>
+                
+                <div class="mt-3 text-right">
+                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Remaining Balance</p>
+                    <p class="text-[10px] font-black text-slate-700">₱{{ "{:,.2f}".format(inst.get_remaining_balance()) }}</p>
+                </div>
+
                 {% set is_paid = inst.is_paid_current %}
                 {% if is_paid %}
-                <span class="text-[7px] font-black bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-1">PAID</span>
+                <span class="text-[7px] font-black bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-2">PAID</span>
                 {% else %}
-                <span class="text-[7px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-1">PENDING</span>
+                <span class="text-[7px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded uppercase tracking-tighter mt-2">PENDING</span>
                 {% endif %}
             </div>
         </div>
