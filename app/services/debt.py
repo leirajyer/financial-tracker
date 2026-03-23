@@ -1,6 +1,6 @@
 from datetime import date
 from sqlalchemy.orm import joinedload
-from sqlalchemy import extract, func
+from sqlalchemy import extract, func, or_
 from app.models import Installment, CardMonthlyStatus, Loan, CashFlow, Category, Card
 import calendar
 from types import SimpleNamespace
@@ -64,7 +64,7 @@ def calculate_monthly_totals(
             active_items.append(item)
             card = item.card
             c_id = card.id if card else 0
-            payment = item.monthly_payment
+            payment = item.monthly_payment or 0.0
             
             card_billing[c_id] = card_billing.get(c_id, 0.0) + payment
 
@@ -75,7 +75,7 @@ def calculate_monthly_totals(
         CashFlow.card_id.is_not(None),
         extract("year", CashFlow.date) == yr,
         extract("month", CashFlow.date) == mo,
-        CashFlow.category_id != cc_cat_id
+        or_(CashFlow.category_id != cc_cat_id, CashFlow.category_id.is_(None))
     )
     if card_id:
         swipes_q = swipes_q.filter(CashFlow.card_id == card_id)
@@ -287,7 +287,7 @@ def get_card_balance_at_date(db_session, user_id, card_id, target_date):
     total_swipes = db_session.query(func.sum(CashFlow.amount)).filter(
         CashFlow.owner_id == user_id,
         CashFlow.card_id == card_id,
-        CashFlow.category_id != cc_cat_id,
+        or_(CashFlow.category_id != cc_cat_id, CashFlow.category_id.is_(None)),
         CashFlow.type == "expense",
         CashFlow.date <= end_of_month
     ).scalar() or 0.0
@@ -308,7 +308,7 @@ def get_card_balance_at_date(db_session, user_id, card_id, target_date):
         
         months_passed = (end.year - start.year) * 12 + (end.month - start.month) + 1
         months_to_bill = min(months_passed, inst.payment_terms or 1)
-        total_inst += inst.monthly_payment * months_to_bill
+        total_inst += (inst.monthly_payment or 0.0) * months_to_bill
 
     # 4. Total Loans up to end_of_month
     all_loans = db_session.query(Loan).filter(
@@ -386,9 +386,10 @@ def get_monthly_forecast(db, year, month, card_id=None, payee_id=None, user_id=N
 
     # 2. Process items and group by Card
     for item in all_items:
-        if item.start_date <= target_date <= item.end_date:
+        if item.start_date and item.end_date and item.start_date <= target_date <= item.end_date:
             active_items.append(item)
-            total_due += item.monthly_payment
+            pmt = item.monthly_payment or 0.0
+            total_due += pmt
 
             c_name = item.card.name if item.card else "Unknown"
             c_id = item.card_id if item.card else None
@@ -398,12 +399,13 @@ def get_monthly_forecast(db, year, month, card_id=None, payee_id=None, user_id=N
                 status = get_card_status(db, c_id, year, month) if c_id else "PENDING"
                 card_data[c_name] = {"total": 0.0, "id": c_id, "status": status}
 
-            card_data[c_name]["total"] += item.monthly_payment
+            card_data[c_name]["total"] += pmt
 
     # 3. Process loans and group by Card
     for loan in all_loans:
-        if loan.start_date <= target_date <= loan.end_date:
-            total_due += loan.monthly_payment
+        if loan.start_date and loan.end_date and loan.start_date <= target_date <= loan.end_date:
+            l_pmt = loan.monthly_payment or 0.0
+            total_due += l_pmt
             
             if loan.card_id:
                 c_name = loan.card.name
@@ -413,7 +415,7 @@ def get_monthly_forecast(db, year, month, card_id=None, payee_id=None, user_id=N
                     status = get_card_status(db, c_id, year, month)
                     card_data[c_name] = {"total": 0.0, "id": c_id, "status": status}
                 
-                card_data[c_name]["total"] += loan.monthly_payment
+                card_data[c_name]["total"] += l_pmt
 
     return {
         "items": active_items,
@@ -459,15 +461,15 @@ def get_debt_burn_down(db_session, months_to_forecast=12, user_id=None):
         target_date = date(target_year, target_month, 1)
 
         monthly_total = sum(
-            item.monthly_payment
+            (item.monthly_payment or 0.0)
             for item in items
-            if item.start_date <= target_date <= item.end_date
+            if item.start_date and item.end_date and item.start_date <= target_date <= item.end_date
         )
         
         monthly_total += sum(
-            loan.monthly_payment
+            (loan.monthly_payment or 0.0)
             for loan in loans
-            if loan.start_date <= target_date <= loan.end_date
+            if loan.start_date and loan.end_date and loan.start_date <= target_date <= loan.end_date
         )
 
         forecast.append(
