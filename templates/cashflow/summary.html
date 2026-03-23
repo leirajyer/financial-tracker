@@ -1,20 +1,57 @@
-<div class="divide-y divide-slate-50">
+<div class="space-y-3 p-2">
     {% for item in recent_cashflow %}
-    <div class="px-4 py-3 flex justify-between items-center">
-        <div>
-            <p class="text-xs font-black text-slate-800">{{ item.description }}</p>
-            <div class="flex items-center gap-2 mt-0.5">
-                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{{ item.date.strftime('%b %d') }}</p>
-                {% if item.card %}
-                <span class="text-[8px] font-black px-1 py-0.5 bg-indigo-50 text-indigo-500 rounded uppercase tracking-widest border border-indigo-100">
-                    {{ item.card.name }}
-                </span>
-                {% endif %}
+    {% set card_color = item.card.color if item.card else ('#10b981' if item.type == 'income' else '#94a3b8') %}
+    
+    <div class="relative group bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden">
+        
+        <!-- Subtle ambient background glow -->
+        <div class="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-[0.03] blur-2xl group-hover:opacity-10 transition-opacity duration-500" style="background-color: {{ card_color }}"></div>
+
+        <div class="relative z-10 flex justify-between items-center">
+            
+            <!-- Left Column: Identity & Context -->
+            <div class="flex gap-3 items-start flex-1 pr-4">
+                <!-- Color Identity Pill -->
+                <div class="shrink-0 w-1.5 h-10 rounded-full mt-1" style="background-color: {{ card_color }}"></div>
+                
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            {{ item.date.strftime('%b %d') }}
+                            {% if item.card %} <span class="opacity-50 mx-0.5">&bull;</span> <span style="color: {{ card_color }}">{{ item.card.name }}</span>{% endif %}
+                        </span>
+                    </div>
+                    
+                    <h4 class="text-sm font-black text-slate-800 tracking-tight leading-tight">{{ item.description }}</h4>
+                    
+                    <div class="flex flex-wrap gap-2 mt-2">
+                        {% if item.category %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded shadow-sm bg-slate-50 border border-slate-100 text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+                            CAT: <span class="font-black text-slate-700">{{ item.category.name }}</span>
+                        </span>
+                        {% endif %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded shadow-sm bg-slate-50 border border-slate-100 text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+                            TYPE: <span class="font-black {{ 'text-emerald-600' if item.type == 'income' else 'text-slate-700' }}">{{ item.type }}</span>
+                        </span>
+                    </div>
+                </div>
             </div>
+
+            <!-- Right Column: Amount Metrics -->
+            <div class="flex flex-col items-end shrink-0 pl-4 border-l border-slate-50 justify-center">
+                <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">AMT.</span>
+                <span class="text-sm font-black {{ 'text-emerald-600' if item.type == 'income' else 'text-slate-800' }} leading-none">
+                    {{ '+' if item.type == 'income' else '-' }}₱{{ "{:,.2f}".format(item.amount) }}
+                </span>
+            </div>
+
         </div>
-        <span class="text-xs font-black {{ 'text-emerald-600' if item.type == 'income' else 'text-rose-500' }}">
-            {{ '+' if item.type == 'income' else '-' }}₱{{ "{:,.2f}".format(item.amount) }}
-        </span>
     </div>
     {% endfor %}
+    
+    {% if not recent_cashflow %}
+    <div class="py-10 text-center">
+        <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No recent activity</p>
+    </div>
+    {% endif %}
 </div>
