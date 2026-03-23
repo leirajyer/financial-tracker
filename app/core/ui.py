@@ -11,4 +11,4 @@ def render_template(template_name: str, request: Request, context: dict = {}):
         "current_user": getattr(request.state, "user", None),
         **context
     }
-    return templates.TemplateResponse(template_name, full_context)
+    return templates.TemplateResponse(request=request, name=template_name, context=full_context)

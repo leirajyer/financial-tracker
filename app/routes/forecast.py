@@ -27,8 +27,9 @@ async def get_forecast(
     stats = calculate_monthly_totals(db, year, month, user_id=user.id)
 
     forecast_html = templates.TemplateResponse(
-        "partials/forecast.html",
-        {
+        request=request,
+        name="partials/forecast.html",
+        context={
             "request": request,
             **stats,
         },
@@ -75,8 +76,9 @@ async def toggle_card_status(
     stats = calculate_monthly_totals(db, year, month, user_id=user.id)
 
     status_container_html = templates.TemplateResponse(
-        "partials/card_status_container.html",
-        {
+        request=request,
+        name="partials/card_status_container.html",
+        context={
             "request": request,
             "year": year,
             "month": month,

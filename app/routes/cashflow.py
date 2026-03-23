@@ -30,8 +30,9 @@ async def get_installments_by_category(
     
     from app.core.ui import templates
     return templates.TemplateResponse(
-        "cashflow/partials/card_selector.html",
-        {
+        request=request,
+        name="cashflow/partials/card_selector.html",
+        context={
             "request": request,
             "pending_cards": pending_cards,
         }
