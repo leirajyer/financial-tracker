@@ -135,23 +135,29 @@ async def index(
             cat_dict[cat.name] = cat
     categories = sorted(cat_dict.values(), key=lambda x: x.name)
 
-    from app.core.ui import render_template
-    return render_template(
-        "index.html",
-        request,
-        {
-            "recent_cashflow": recent_cashflow,
-            "installments": active_installments,
-            "cashflow_expense_total": cashflow_expense_total,
-            "loan_total_monthly": loan_total_monthly,
-            "aggregate_monthly_payment": aggregate_monthly_payment,
-            "cards": cards,
-            "payees": payees,
-            "categories": categories,
-            "filter_card": card_id,
-            "filter_payee": payee_id,
-            "filter_category": category_id,
-            "now": dt.now(),
-            **stats,
-        },
-    )
+    try:
+        from app.core.ui import render_template
+        return render_template(
+            "index.html",
+            request,
+            {
+                "recent_cashflow": recent_cashflow,
+                "installments": active_installments,
+                "cashflow_expense_total": cashflow_expense_total,
+                "loan_total_monthly": loan_total_monthly,
+                "aggregate_monthly_payment": aggregate_monthly_payment,
+                "cards": cards,
+                "payees": payees,
+                "categories": categories,
+                "filter_card": card_id,
+                "filter_payee": payee_id,
+                "filter_category": category_id,
+                "now": dt.now(),
+                **stats,
+            },
+        )
+    except Exception as e:
+        import traceback
+        from fastapi.responses import PlainTextResponse
+        error_msg = traceback.format_exc()
+        return PlainTextResponse(f"HOMEPAGE CRASH:\n\n{error_msg}", status_code=200)
