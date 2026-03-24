@@ -34,8 +34,10 @@ from app.core.auth import get_current_user, SECRET_KEY, RequiresLoginException, 
 
 from app.core.ui import templates
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Salapi")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Handle proxy headers for HTTPS redirection (critical for Railway/Render)
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
