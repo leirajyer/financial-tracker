@@ -5,10 +5,9 @@ __pycache__/
 .venv/
 venv/
 
-# Database (Keep your old SQLite ignores just in case)
-installments.db
-financial.db
-# ADD THIS: Postgres data folder
+# Database
+*.db
+local.db
 pgdata/
 
 # Environment/Secrets
